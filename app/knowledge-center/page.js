@@ -1,15 +1,41 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
+import ShareStoryModal from '../../components/ShareStoryModal'
 import { Calendar, TreePine, Cloud, BookOpen, Search, Filter, Star, Users, Camera, Play, MapPin, Clock, Volume2 } from 'lucide-react'
 import { congoBasinSpecies, traditionalCalendar, weatherWisdom, conservationStories } from '../../lib/data/congoBasinData'
 
 export default function KnowledgeCenter() {
     const [activeTab, setActiveTab] = useState('calendar')
     const [searchTerm, setSearchTerm] = useState('')
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+    const [userStories, setUserStories] = useState([])
     const [selectedSeason, setSelectedSeason] = useState(null)
     const [selectedSpecies, setSelectedSpecies] = useState(null)
+
+    useEffect(() => {
+        // Load user stories from localStorage
+        const savedStories = localStorage.getItem('tac-hub-user-stories')
+        if (savedStories) {
+            setUserStories(JSON.parse(savedStories))
+        }
+    }, [])
+
+    const handleStorySubmit = (storyData) => {
+        const newStory = {
+            id: Date.now().toString(),
+            ...storyData,
+            lessonsLearned: storyData.lessonsLearned.split(',').map(lesson => lesson.trim()).filter(lesson => lesson)
+        }
+
+        const updatedStories = [newStory, ...userStories]
+        setUserStories(updatedStories)
+        localStorage.setItem('tac-hub-user-stories', JSON.stringify(updatedStories))
+
+        // Show success message
+        alert('Thank you for sharing your story! It has been submitted for review.')
+    }
 
     const knowledgeCategories = [{
             id: 'calendar',
@@ -201,7 +227,7 @@ export default function KnowledgeCenter() {
                             <
                             h5 className = "font-semibold text-gray-700 text-sm mb-1" > Traditional Uses < /h5> <
                             div className = "flex flex-wrap gap-1" > {
-                                species.uses.map((use, i) => ( <
+                                species.traditionalUses && species.traditionalUses.map((use, i) => ( <
                                     span key = { i }
                                     className = "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs" > { use } <
                                     /span>
@@ -213,8 +239,29 @@ export default function KnowledgeCenter() {
                             <
                             div >
                             <
-                            h5 className = "font-semibold text-gray-700 text-sm mb-1" > Traditional Knowledge < /h5> <
-                            p className = "text-sm text-gray-600" > { species.traditionalKnowledge } < /p> < /
+                            h5 className = "font-semibold text-gray-700 text-sm mb-1" > Threats < /h5> <
+                            div className = "flex flex-wrap gap-1" > {
+                                species.threats && species.threats.map((threat, i) => ( <
+                                    span key = { i }
+                                    className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs" > { threat } <
+                                    /span>
+                                ))
+                            } <
+                            /div> < /
+                            div >
+
+                            <
+                            div >
+                            <
+                            h5 className = "font-semibold text-gray-700 text-sm mb-1" > Conservation Efforts < /h5> <
+                            div className = "flex flex-wrap gap-1" > {
+                                species.conservationEfforts && species.conservationEfforts.map((effort, i) => ( <
+                                    span key = { i }
+                                    className = "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" > { effort } <
+                                    /span>
+                                ))
+                            } <
+                            /div> < /
                             div > <
                             /div> < /
                             div > <
@@ -291,20 +338,23 @@ export default function KnowledgeCenter() {
                     div className = "flex justify-between items-center" >
                     <
                     h3 className = "text-2xl font-bold text-gray-900" > Conservation Stories < /h3> <
-                    button className = "bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors" >
+                    button onClick = {
+                        () => setIsShareModalOpen(true)
+                    }
+                    className = "bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors" >
                     Share Your Story <
                     /button> < /
                     div >
 
                     <
                     div className = "space-y-6" > {
-                        stories.map((story, index) => ( <
+                        [...userStories, ...stories].map((story, index) => ( <
                             div key = { index }
                             className = "bg-white rounded-xl p-6 shadow-sm border border-gray-100" >
                             <
                             div className = "flex flex-col lg:flex-row gap-6" >
                             <
-                            img src = { story.image }
+                            img src = { story.images && story.images[0] || story.image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop' }
                             alt = { story.title }
                             className = "w-full lg:w-64 h-48 object-cover rounded-lg" /
                             >
@@ -315,7 +365,15 @@ export default function KnowledgeCenter() {
                             <
                             div >
                             <
-                            h4 className = "text-xl font-bold text-gray-900 mb-1" > { story.title } < /h4> <
+                            div className="flex items-start justify-between mb-1">
+                            <h4 className = "text-xl font-bold text-gray-900" > { story.title } < /h4>
+                            {story.status === 'pending_review' && (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                                Pending Review
+                              </span>
+                            )}
+                            </div>
+                            <
                             p className = "text-sm text-gray-500" >
                             By { story.author }• { story.community }• { story.date } <
                             /p> < /
@@ -337,13 +395,28 @@ export default function KnowledgeCenter() {
                             div >
                             <
                             h5 className = "font-semibold text-gray-700 text-sm mb-2" > Impact Achieved < /h5> <
-                            p className = "text-sm text-gray-600" > { story.impact } < /p> < /
+                            div className = "text-sm text-gray-600 space-y-1" > {
+                                story.impact && typeof story.impact === 'object' ? ( <
+                                    div >
+                                    <
+                                    p > < strong > Environmental: < /strong> {story.impact.environmental}</p >
+                                    <
+                                    p > < strong > Social: < /strong> {story.impact.social}</p >
+                                    <
+                                    p > < strong > Economic: < /strong> {story.impact.economic}</p >
+                                    <
+                                    /div>
+                                ) : ( <
+                                    p > { story.impact || story.summary } < /p>
+                                )
+                            } <
+                            /div> < /
                             div > <
                             div >
                             <
                             h5 className = "font-semibold text-gray-700 text-sm mb-2" > Key Lessons < /h5> <
                             ul className = "text-sm text-gray-600 space-y-1" > {
-                                story.lessons.map((lesson, i) => ( <
+                                (story.lessonsLearned || story.lessons || []).map((lesson, i) => ( <
                                     li key = { i }
                                     className = "flex items-center" >
                                     <
@@ -453,6 +526,12 @@ export default function KnowledgeCenter() {
       </div>
 
       <Footer />
+
+      <ShareStoryModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        onSubmit={handleStorySubmit}
+      />
     </main>
   )
 }
