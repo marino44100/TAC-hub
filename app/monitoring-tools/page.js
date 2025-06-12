@@ -5,6 +5,7 @@ import Footer from '../../components/Footer'
 import ForestHealthAnalyzer from '../../components/ForestHealthAnalyzer'
 import WeatherTracker from '../../components/WeatherTracker'
 import WildlifeCounter from '../../components/WildlifeCounter'
+import CarbonCalculator from '../../components/CarbonCalculator'
 import AdminPanel from '../../components/AdminPanel'
 import { Camera, Calendar, TreePine, Calculator, Upload, CheckCircle, Save, Settings } from 'lucide-react'
 
@@ -371,11 +372,25 @@ const renderContent = () => {
             )
         case 'carbon-calculator':
             return ( <
-                div className = "bg-white rounded-xl p-6 shadow-sm border border-gray-100" >
-                <
-                h4 className = "text-lg font-semibold text-gray-900 mb-4" > Carbon Calculator - Coming Soon < /h4> <
-                p className = "text-gray-600" > This feature will help you calculate forest carbon storage and track progress. < /p> < /
-                div >
+                CarbonCalculator onCalculationComplete = {
+                    (calculationData) => {
+                        // Save carbon calculation to submissions
+                        const newSubmission = {
+                            id: Date.now(),
+                            ...calculationData,
+                            timestamp: new Date().toISOString()
+                        }
+
+                        const updatedSubmissions = {
+                            ...submissions,
+                            carbon: [newSubmission, ...submissions.carbon]
+                        }
+
+                        localStorage.setItem('tac-hub-monitoring-submissions', JSON.stringify(updatedSubmissions))
+                        setSubmissions(updatedSubmissions)
+                    }
+                }
+                />
             )
         default:
             return null
