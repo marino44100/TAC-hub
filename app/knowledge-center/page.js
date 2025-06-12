@@ -1,513 +1,466 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import ShareStoryModal from '../../components/ShareStoryModal'
-import { Calendar, TreePine, Cloud, BookOpen, Search, Filter, Star, Users, Camera, Play, MapPin, Clock, Volume2 } from 'lucide-react'
-import { congoBasinSpecies, traditionalCalendar, weatherWisdom, conservationStories } from '../../lib/data/congoBasinData'
+import { 
+  Calendar, TreePine, Cloud, BookOpen, Search, Filter, Star, Users, 
+  Camera, Play, MapPin, Clock, Volume2, AlertCircle, CheckCircle, 
+  Info, Eye, Edit, Trash2, Plus
+} from 'lucide-react'
+import { CongoBasinKnowledgeService } from '../../lib/congoBasinKnowledgeService'
 
 export default function KnowledgeCenter() {
-    const [activeTab, setActiveTab] = useState('calendar')
-    const [searchTerm, setSearchTerm] = useState('')
-    const [isShareModalOpen, setIsShareModalOpen] = useState(false)
-    const [userStories, setUserStories] = useState([])
-    const [selectedSeason, setSelectedSeason] = useState(null)
-    const [selectedSpecies, setSelectedSpecies] = useState(null)
+  const { user } = useAuth()
+  const [knowledgeService] = useState(() => new CongoBasinKnowledgeService())
+  const [activeTab, setActiveTab] = useState('calendar')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        // Load user stories from localStorage
-        const savedStories = localStorage.getItem('tac-hub-user-stories')
-        if (savedStories) {
-            setUserStories(JSON.parse(savedStories))
-        }
-    }, [])
+  useEffect(() => {
+    loadData()
+  }, [])
 
-    const handleStorySubmit = (storyData) => {
-        const newStory = {
-            id: Date.now().toString(),
-            ...storyData,
-            lessonsLearned: storyData.lessonsLearned.split(',').map(lesson => lesson.trim()).filter(lesson => lesson)
-        }
+  const loadData = () => {
+    setLoading(true)
+    try {
+      const knowledgeData = knowledgeService.getData()
+      setData(knowledgeData)
+    } catch (error) {
+      console.error('Failed to load knowledge data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-        const updatedStories = [newStory, ...userStories]
-        setUserStories(updatedStories)
-        localStorage.setItem('tac-hub-user-stories', JSON.stringify(updatedStories))
+  const handleStorySubmit = async (storyData) => {
+    try {
+      if (!user) {
+        alert('Please log in to share your story.')
+        return
+      }
 
-        // Show success message
-        alert('Thank you for sharing your story! It has been submitted for review.')
+      await knowledgeService.submitStory(storyData, user)
+      alert('✅ Thank you for sharing your story! It has been submitted for review.')
+      loadData()
+    } catch (error) {
+      alert('Failed to submit story: ' + error.message)
+    }
+  }
+
+  const knowledgeCategories = [
+    {
+      id: 'calendar',
+      title: 'Traditional Calendar',
+      icon: Calendar,
+      description: 'Seasonal patterns and climate signs from Congo Basin communities',
+      color: 'green'
+    },
+    {
+      id: 'species',
+      title: 'Species Guide',
+      icon: TreePine,
+      description: 'Comprehensive guide to Congo Basin flora and fauna',
+      color: 'blue'
+    },
+    {
+      id: 'weather',
+      title: 'Weather Wisdom',
+      icon: Cloud,
+      description: 'Traditional weather prediction methods with scientific validation',
+      color: 'purple'
+    },
+    {
+      id: 'stories',
+      title: 'Conservation Stories',
+      icon: BookOpen,
+      description: 'Community success stories and lessons learned',
+      color: 'orange'
+    }
+  ]
+
+  const getColorClasses = (color) => {
+    const colors = {
+      green: 'bg-green-100 text-green-600 border-green-200',
+      blue: 'bg-blue-100 text-blue-600 border-blue-200',
+      purple: 'bg-purple-100 text-purple-600 border-purple-200',
+      orange: 'bg-orange-100 text-orange-600 border-orange-200'
+    }
+    return colors[color] || 'bg-gray-100 text-gray-600 border-gray-200'
+  }
+
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+            <p className="text-gray-600">Loading traditional knowledge...</p>
+          </div>
+        </div>
+      )
     }
 
-    const knowledgeCategories = [{
-            id: 'calendar',
-            title: 'Traditional Calendar',
-            icon: Calendar,
-            description: 'Digital version of seasonal patterns and climate signs',
-            color: 'green'
-        },
-        {
-            id: 'species',
-            title: 'Species Guide',
-            icon: TreePine,
-            description: 'Photos and information about local plants and animals',
-            color: 'blue'
-        },
-        {
-            id: 'weather',
-            title: 'Weather Wisdom',
-            icon: Cloud,
-            description: 'Combine traditional forecasting with modern weather data',
-            color: 'purple'
-        },
-        {
-            id: 'stories',
-            title: 'Conservation Stories',
-            icon: BookOpen,
-            description: 'Share success stories and lessons learned',
-            color: 'orange'
-        }
-    ]
+    switch (activeTab) {
+      case 'calendar':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-gray-900">Traditional Seasonal Calendar</h3>
+            <p className="text-gray-600 mb-6">
+              Based on ethnographic studies from Congo Basin communities including Baka, Mbuti, Bantu, and other indigenous groups.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {(data?.traditionalCalendar || []).map((season, index) => (
+                <div key={season.id || index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xl font-bold text-gray-900">{season.period}</h4>
+                    <Calendar className="w-6 h-6 text-green-600" />
+                  </div>
+                  
+                  {season.localName && (
+                    <p className="text-sm text-gray-600 italic mb-3">{season.localName}</p>
+                  )}
+                  
+                  <p className="text-gray-700 mb-4">{season.description}</p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h5 className="font-semibold text-gray-700 mb-2 flex items-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        Traditional Activities
+                      </h5>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {(season.activities || []).map((activity, i) => (
+                          <li key={i} className="flex items-start">
+                            <span className="text-green-500 mr-2">•</span>
+                            {activity}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h5 className="font-semibold text-gray-700 mb-2 flex items-center">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                        Natural Signs
+                      </h5>
+                      <ul className="text-sm text-gray-600 space-y-1">
+                        {(season.naturalSigns || []).map((sign, i) => (
+                          <li key={i} className="flex items-start">
+                            <span className="text-blue-500 mr-2">•</span>
+                            {sign}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
 
-    const traditionalCalendar = [{
-            month: 'Dry Season (Dec-Feb)',
-            activities: ['Forest clearing preparation', 'Hunting season begins', 'Honey collection'],
-            signs: ['Leaves turn yellow', 'Rivers run low', 'Animals migrate to water sources'],
-            modernData: 'Average rainfall: 50mm, Temperature: 28°C'
-        },
-        {
-            month: 'Early Rains (Mar-May)',
-            activities: ['Planting season', 'Forest regeneration', 'Fish spawning'],
-            signs: ['First thunder heard', 'New leaves appear', 'Insects become active'],
-            modernData: 'Average rainfall: 150mm, Temperature: 26°C'
-        },
-        {
-            month: 'Heavy Rains (Jun-Aug)',
-            activities: ['Crop maintenance', 'Mushroom collection', 'Limited travel'],
-            signs: ['Rivers flood', 'Forest canopy thick', 'Bird migration patterns'],
-            modernData: 'Average rainfall: 300mm, Temperature: 24°C'
-        },
-        {
-            month: 'Late Rains (Sep-Nov)',
-            activities: ['Harvest preparation', 'Medicine collection', 'Community gatherings'],
-            signs: ['Fruit trees ripen', 'Animal tracks visible', 'Wind patterns change'],
-            modernData: 'Average rainfall: 200mm, Temperature: 25°C'
-        }
-    ]
+                    {season.modernData && (
+                      <div className="bg-gray-50 rounded-lg p-3">
+                        <h5 className="font-semibold text-gray-700 mb-1">Modern Climate Data</h5>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <p>Rainfall: {season.modernData.avgRainfall}</p>
+                          <p>Temperature: {season.modernData.avgTemperature}</p>
+                          <p>Humidity: {season.modernData.humidity}</p>
+                        </div>
+                      </div>
+                    )}
 
-    // Using real Congo Basin species data
-    const speciesGuide = congoBasinSpecies
-
-    // Using real Congo Basin conservation stories
-    const stories = conservationStories
-
-    const getColorClasses = (color) => {
-        const colors = {
-            green: 'bg-green-100 text-green-600 border-green-200',
-            blue: 'bg-blue-100 text-blue-600 border-blue-200',
-            purple: 'bg-purple-100 text-purple-600 border-purple-200',
-            orange: 'bg-orange-100 text-orange-600 border-orange-200'
-        }
-        return colors[color] || 'bg-gray-100 text-gray-600 border-gray-200'
-    }
-
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'calendar':
-                return ( <
-                    div className = "space-y-6" >
-                    <
-                    h3 className = "text-2xl font-bold text-gray-900 mb-6" > Traditional Seasonal Calendar < /h3> <
-                    div className = "grid grid-cols-1 md:grid-cols-2 gap-6" > {
-                        traditionalCalendar.map((season, index) => ( <
-                            div key = { index }
-                            className = "bg-white rounded-xl p-6 shadow-sm border border-gray-100" >
-                            <
-                            h4 className = "text-xl font-bold text-gray-900 mb-4" > { season.month } < /h4>
-
-                            <
-                            div className = "space-y-4" >
-                            <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 mb-2" > Traditional Activities < /h5> <
-                            ul className = "text-sm text-gray-600 space-y-1" > {
-                                season.activities.map((activity, i) => ( <
-                                    li key = { i }
-                                    className = "flex items-center" >
-                                    <
-                                    div className = "w-2 h-2 bg-green-500 rounded-full mr-2" > < /div> { activity } < /
-                                    li >
-                                ))
-                            } <
-                            /ul> < /
-                            div >
-
-                            <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 mb-2" > Natural Signs < /h5> <
-                            ul className = "text-sm text-gray-600 space-y-1" > {
-                                season.signs.map((sign, i) => ( <
-                                    li key = { i }
-                                    className = "flex items-center" >
-                                    <
-                                    div className = "w-2 h-2 bg-blue-500 rounded-full mr-2" > < /div> { sign } < /
-                                    li >
-                                ))
-                            } <
-                            /ul> < /
-                            div >
-
-                            <
-                            div className = "bg-gray-50 rounded-lg p-3" >
-                            <
-                            h5 className = "font-semibold text-gray-700 mb-1" > Modern Weather Data < /h5> <
-                            p className = "text-sm text-gray-600" > { season.modernData } < /p> < /
-                            div > <
-                            /div> < /
-                            div >
-                        ))
-                    } <
-                    /div> < /
-                    div >
-                )
-
-            case 'species':
-                return ( <
-                    div className = "space-y-6" >
-                    <
-                    div className = "flex justify-between items-center" >
-                    <
-                    h3 className = "text-2xl font-bold text-gray-900" > Species Guide < /h3> <
-                    div className = "flex space-x-2" >
-                    <
-                    button className = "px-4 py-2 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium" >
-                    All Species <
-                    /button> <
-                    button className = "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium" >
-                    Trees <
-                    /button> <
-                    button className = "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium" >
-                    Animals <
-                    /button> <
-                    button className = "px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium" >
-                    Plants <
-                    /button> < /
-                    div > <
-                    /div>
-
-                    <
-                    div className = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" > {
-                        speciesGuide.map((species, index) => ( <
-                            div key = { index }
-                            className = "bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100" >
-                            <
-                            img src = { species.image }
-                            alt = { species.name }
-                            className = "w-full h-48 object-cover" /
-                            >
-                            <
-                            div className = "p-6" >
-                            <
-                            div className = "flex justify-between items-start mb-2" >
-                            <
-                            h4 className = "text-lg font-bold text-gray-900" > { species.name } < /h4> <
-                            span className = { `px-2 py-1 rounded-full text-xs font-medium ${
-                        species.status === 'Endangered' ? 'bg-red-100 text-red-700' :
-                        species.status === 'Critically Endangered' ? 'bg-red-200 text-red-800' :
+                    {season.culturalEvents && season.culturalEvents.length > 0 && (
+                      <div>
+                        <h5 className="font-semibold text-gray-700 mb-2 flex items-center">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                          Cultural Events
+                        </h5>
+                        <ul className="text-sm text-gray-600 space-y-1">
+                          {season.culturalEvents.map((event, i) => (
+                            <li key={i} className="flex items-start">
+                              <span className="text-purple-500 mr-2">•</span>
+                              {event}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      case 'species':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-gray-900">Congo Basin Species Guide</h3>
+            <p className="text-gray-600 mb-6">
+              Comprehensive guide featuring {(data?.speciesGuide || []).length} documented species with traditional knowledge and conservation status.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(data?.speciesGuide || []).map((species, index) => (
+                <div key={species.id || index} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
+                  <div className="h-48 bg-gradient-to-br from-green-100 to-blue-100 flex items-center justify-center">
+                    <TreePine className="w-16 h-16 text-green-600" />
+                  </div>
+                  
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-lg font-bold text-gray-900">{species.commonName}</h4>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        species.conservationStatus === 'Critically Endangered' ? 'bg-red-100 text-red-700' :
+                        species.conservationStatus === 'Endangered' ? 'bg-orange-100 text-orange-700' :
+                        species.conservationStatus === 'Vulnerable' ? 'bg-yellow-100 text-yellow-700' :
                         'bg-green-100 text-green-700'
-                      }` } > { species.status } <
-                            /span> < /
-                            div > <
-                            p className = "text-sm text-gray-500 italic mb-3" > { species.scientificName } < /p>
+                      }`}>
+                        {species.conservationStatus}
+                      </span>
+                    </div>
+                    
+                    <p className="text-sm text-gray-500 italic mb-3">{species.scientificName}</p>
+                    
+                    {species.localNames && (
+                      <div className="mb-3">
+                        <h5 className="font-semibold text-gray-700 text-sm mb-1">Local Names</h5>
+                        <div className="text-xs text-gray-600">
+                          {Object.entries(species.localNames).map(([lang, name]) => (
+                            <span key={lang} className="mr-2">
+                              <strong>{lang}:</strong> {name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                            <
-                            div className = "space-y-3" >
-                            <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 text-sm mb-1" > Traditional Uses < /h5> <
-                            div className = "flex flex-wrap gap-1" > {
-                                species.traditionalUses && species.traditionalUses.map((use, i) => ( <
-                                    span key = { i }
-                                    className = "px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs" > { use } <
-                                    /span>
-                                ))
-                            } <
-                            /div> < /
-                            div >
+                    <div className="space-y-3">
+                      <div>
+                        <h5 className="font-semibold text-gray-700 text-sm mb-1">Habitat</h5>
+                        <p className="text-sm text-gray-600">{species.habitat}</p>
+                      </div>
 
-                            <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 text-sm mb-1" > Threats < /h5> <
-                            div className = "flex flex-wrap gap-1" > {
-                                species.threats && species.threats.map((threat, i) => ( <
-                                    span key = { i }
-                                    className = "px-2 py-1 bg-red-100 text-red-700 rounded text-xs" > { threat } <
-                                    /span>
-                                ))
-                            } <
-                            /div> < /
-                            div >
+                      {species.traditionalKnowledge?.culturalSignificance && (
+                        <div>
+                          <h5 className="font-semibold text-gray-700 text-sm mb-1">Cultural Significance</h5>
+                          <p className="text-sm text-gray-600">{species.traditionalKnowledge.culturalSignificance}</p>
+                        </div>
+                      )}
 
-                            <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 text-sm mb-1" > Conservation Efforts < /h5> <
-                            div className = "flex flex-wrap gap-1" > {
-                                species.conservationEfforts && species.conservationEfforts.map((effort, i) => ( <
-                                    span key = { i }
-                                    className = "px-2 py-1 bg-green-100 text-green-700 rounded text-xs" > { effort } <
-                                    /span>
-                                ))
-                            } <
-                            /div> < /
-                            div > <
-                            /div> < /
-                            div > <
-                            /div>
-                        ))
-                    } <
-                    /div> < /
-                    div >
-                )
+                      {species.observationTips && species.observationTips.length > 0 && (
+                        <div>
+                          <h5 className="font-semibold text-gray-700 text-sm mb-1">Observation Tips</h5>
+                          <ul className="text-xs text-gray-600 space-y-1">
+                            {species.observationTips.slice(0, 2).map((tip, i) => (
+                              <li key={i} className="flex items-start">
+                                <span className="text-blue-500 mr-1">•</span>
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      case 'weather':
+        return (
+          <div className="space-y-6">
+            <h3 className="text-2xl font-bold text-gray-900">Traditional Weather Wisdom</h3>
+            <p className="text-gray-600 mb-6">
+              Scientifically validated traditional weather prediction methods from Congo Basin communities.
+            </p>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {(data?.weatherWisdom || []).map((category, index) => (
+                <div key={index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <h4 className="text-xl font-bold text-gray-900 mb-2">{category.category}</h4>
+                  <p className="text-gray-600 mb-4">{category.description}</p>
+                  
+                  <div className="space-y-4">
+                    {(category.indicators || []).map((indicator, i) => (
+                      <div key={i} className="border-l-4 border-purple-500 pl-4">
+                        <h5 className="font-semibold text-gray-700 text-sm">{indicator.sign}</h5>
+                        <p className="text-sm text-gray-600 mb-1">
+                          <strong>Prediction:</strong> {indicator.prediction}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-1">
+                          <strong>Accuracy:</strong> {indicator.accuracy}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          <strong>Scientific basis:</strong> {indicator.scientificBasis}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      case 'stories':
+        const stories = knowledgeService.getStoriesByStatus('approved')
+        return (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-2xl font-bold text-gray-900">Conservation Stories</h3>
+              <button
+                onClick={() => {
+                  if (!user) {
+                    alert('Please log in to share your story.')
+                    return
+                  }
+                  setIsShareModalOpen(true)
+                }}
+                className="bg-orange-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Share Your Story
+              </button>
+            </div>
 
-            case 'weather':
-                return ( <
-                    div className = "space-y-6" >
-                    <
-                    h3 className = "text-2xl font-bold text-gray-900 mb-6" > Weather Wisdom < /h3>
+            {!user && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start space-x-3">
+                  <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-blue-900">Share Your Conservation Story</h4>
+                    <p className="text-blue-800 text-sm mt-1">
+                      Log in to share your community's conservation success stories and lessons learned.
+                      Your stories help other communities learn and adapt proven conservation strategies.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                    <
-                    div className = "grid grid-cols-1 lg:grid-cols-2 gap-8" >
-                    <
-                    div className = "bg-white rounded-xl p-6 shadow-sm border border-gray-100" >
-                    <
-                    h4 className = "text-xl font-bold text-gray-900 mb-4" > Traditional Forecasting < /h4> <
-                    div className = "space-y-4" >
-                    <
-                    div className = "border-l-4 border-green-500 pl-4" >
-                    <
-                    h5 className = "font-semibold text-gray-700" > Animal Behavior Signs < /h5> <
-                    p className = "text-sm text-gray-600" > Birds flying low indicates rain within 24 hours < /p> < /
-                    div > <
-                    div className = "border-l-4 border-blue-500 pl-4" >
-                    <
-                    h5 className = "font-semibold text-gray-700" > Plant Indicators < /h5> <
-                    p className = "text-sm text-gray-600" > Leaves turning upward suggests heavy rain approaching < /p> < /
-                    div > <
-                    div className = "border-l-4 border-purple-500 pl-4" >
-                    <
-                    h5 className = "font-semibold text-gray-700" > Sky Patterns < /h5> <
-                    p className = "text-sm text-gray-600" > Red sky at sunset means clear weather tomorrow < /p> < /
-                    div > <
-                    /div> < /
-                    div >
+            <div className="space-y-6">
+              {stories.map((story, index) => (
+                <div key={story.id || index} className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                  <div className="flex flex-col lg:flex-row gap-6">
+                    <div className="w-full lg:w-64 h-48 bg-gradient-to-br from-green-100 to-blue-100 rounded-lg flex items-center justify-center">
+                      {story.images && story.images[0] ? (
+                        <img 
+                          src={story.images[0]} 
+                          alt={story.title}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <TreePine className="w-16 h-16 text-green-600" />
+                      )}
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="text-xl font-bold text-gray-900">{story.title}</h4>
+                          <p className="text-sm text-gray-500">
+                            By {story.author} • {story.community} • {story.region} • {story.date}
+                          </p>
+                        </div>
+                        <div className="flex items-center">
+                          <Star className="w-4 h-4 text-yellow-500 mr-1" />
+                          <span className="text-sm text-gray-600">4.8</span>
+                        </div>
+                      </div>
 
-                    <
-                    div className = "bg-white rounded-xl p-6 shadow-sm border border-gray-100" >
-                    <
-                    h4 className = "text-xl font-bold text-gray-900 mb-4" > Modern Weather Data < /h4> <
-                    div className = "space-y-4" >
-                    <
-                    div className = "flex justify-between items-center p-3 bg-gray-50 rounded-lg" >
-                    <
-                    span className = "font-medium text-gray-700" > Current Temperature < /span> <
-                    span className = "text-xl font-bold text-primary-600" > 26° C < /span> < /
-                    div > <
-                    div className = "flex justify-between items-center p-3 bg-gray-50 rounded-lg" >
-                    <
-                    span className = "font-medium text-gray-700" > Humidity < /span> <
-                    span className = "text-xl font-bold text-primary-600" > 78 % < /span> < /
-                    div > <
-                    div className = "flex justify-between items-center p-3 bg-gray-50 rounded-lg" >
-                    <
-                    span className = "font-medium text-gray-700" > Rain Probability < /span> <
-                    span className = "text-xl font-bold text-primary-600" > 65 % < /span> < /
-                    div > <
-                    /div> < /
-                    div > <
-                    /div> < /
-                    div >
-                )
+                      <p className="text-gray-600 mb-4">{story.summary}</p>
 
-            case 'stories':
-                return ( <
-                    div className = "space-y-6" >
-                    <
-                    div className = "flex justify-between items-center" >
-                    <
-                    h3 className = "text-2xl font-bold text-gray-900" > Conservation Stories < /h3> <
-                    button onClick = {
-                        () => setIsShareModalOpen(true)
-                    }
-                    className = "bg-primary-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-700 transition-colors" >
-                    Share Your Story <
-                    /button> < /
-                    div >
-
-                    <
-                    div className = "space-y-6" > {
-                        [...userStories, ...stories].map((story, index) => ( <
-                            div key = { index }
-                            className = "bg-white rounded-xl p-6 shadow-sm border border-gray-100" >
-                            <
-                            div className = "flex flex-col lg:flex-row gap-6" >
-                            <
-                            img src = { story.images && story.images[0] || story.image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=300&fit=crop' }
-                            alt = { story.title }
-                            className = "w-full lg:w-64 h-48 object-cover rounded-lg" /
-                            >
-                            <
-                            div className = "flex-1" >
-                            <
-                            div className = "flex justify-between items-start mb-3" >
-                            <
-                            div >
-                            <
-                            div className="flex items-start justify-between mb-1">
-                            <h4 className = "text-xl font-bold text-gray-900" > { story.title } < /h4>
-                            {story.status === 'pending_review' && (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                                Pending Review
-                              </span>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <h5 className="font-semibold text-gray-700 text-sm mb-2">Impact Achieved</h5>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            {typeof story.impact === 'object' ? (
+                              Object.entries(story.impact).map(([key, value]) => (
+                                <p key={key}>
+                                  <strong>{key.charAt(0).toUpperCase() + key.slice(1)}:</strong> {value}
+                                </p>
+                              ))
+                            ) : (
+                              <p>{story.impact}</p>
                             )}
-                            </div>
-                            <
-                            p className = "text-sm text-gray-500" >
-                            By { story.author }• { story.community }• { story.date } <
-                            /p> < /
-                            div > <
-                            div className = "flex items-center" >
-                            <
-                            Star className = "w-4 h-4 text-yellow-500 mr-1" / >
-                            <
-                            span className = "text-sm text-gray-600" > 4.8 < /span> < /
-                            div > <
-                            /div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <h5 className="font-semibold text-gray-700 text-sm mb-2">Key Lessons</h5>
+                          <ul className="text-sm text-gray-600 space-y-1">
+                            {(story.lessonsLearned || []).slice(0, 3).map((lesson, i) => (
+                              <li key={i} className="flex items-start">
+                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2 mt-2"></div>
+                                {lesson}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
 
-                            <
-                            p className = "text-gray-600 mb-4" > { story.summary } < /p>
-
-                            <
-                            div className = "grid grid-cols-1 md:grid-cols-2 gap-4 mb-4" >
-                            <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 text-sm mb-2" > Impact Achieved < /h5> <
-                            div className = "text-sm text-gray-600 space-y-1" > {
-                                story.impact && typeof story.impact === 'object' ? ( <
-                                    div >
-                                    <
-                                    p > < strong > Environmental: < /strong> {story.impact.environmental}</p >
-                                    <
-                                    p > < strong > Social: < /strong> {story.impact.social}</p >
-                                    <
-                                    p > < strong > Economic: < /strong> {story.impact.economic}</p >
-                                    <
-                                    /div>
-                                ) : ( <
-                                    p > { story.impact || story.summary } < /p>
-                                )
-                            } <
-                            /div> < /
-                            div > <
-                            div >
-                            <
-                            h5 className = "font-semibold text-gray-700 text-sm mb-2" > Key Lessons < /h5> <
-                            ul className = "text-sm text-gray-600 space-y-1" > {
-                                (story.lessonsLearned || story.lessons || []).map((lesson, i) => ( <
-                                    li key = { i }
-                                    className = "flex items-center" >
-                                    <
-                                    div className = "w-1.5 h-1.5 bg-green-500 rounded-full mr-2" > < /div> { lesson } < /
-                                    li >
-                                ))
-                            } <
-                            /ul> < /
-                            div > <
-                            /div>
-
-                            <
-                            div className = "flex items-center space-x-4 text-sm text-gray-500" >
-                            <
-                            button className = "flex items-center hover:text-primary-600" >
-                            <
-                            Users className = "w-4 h-4 mr-1" / >
-                            24 communities inspired <
-                            /button> <
-                            button className = "flex items-center hover:text-primary-600" >
-                            <
-                            Camera className = "w-4 h-4 mr-1" / >
-                            View photos <
-                            /button> <
-                            button className = "flex items-center hover:text-primary-600" >
-                            <
-                            Play className = "w-4 h-4 mr-1" / >
-                            Watch video <
-                            /button> < /
-                            div > <
-                            /div> < /
-                            div > <
-                            /div>
-                        ))
-                    } <
-                    /div> < /
-                    div >
-                )
-
-            default:
-                return null
-        }
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-1" />
+                          {story.region}
+                        </span>
+                        <span className="flex items-center">
+                          <Clock className="w-4 h-4 mr-1" />
+                          {story.duration}
+                        </span>
+                        <span className="flex items-center">
+                          <Users className="w-4 h-4 mr-1" />
+                          Community-led
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      
+      default:
+        return null
     }
+  }
 
-    return ( <
-            main className = "min-h-screen bg-gray-50" >
-            <
-            Header / >
+  return (
+    <main className="min-h-screen bg-gray-50">
+      <Header />
 
-            <
-            div className = "container-max py-8" > { /* Header */ } <
-            div className = "text-center mb-12" >
-            <
-            h1 className = "text-4xl font-bold text-gray-900 mb-4" > Community Knowledge Center < /h1> <
-            p className = "text-xl text-gray-600 max-w-3xl mx-auto" >
-            Access and share traditional knowledge combined with modern data to strengthen community conservation efforts <
-            /p> < /
-            div >
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Community Knowledge Center</h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Preserving and sharing traditional ecological knowledge from Congo Basin communities, 
+            combined with modern scientific data for effective conservation.
+          </p>
+        </div>
 
-            { /* Search Bar */ } <
-            div className = "max-w-2xl mx-auto mb-8" >
-            <
-            div className = "relative" >
-            <
-            Search className = "absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" / >
-            <
-            input type = "text"
-            placeholder = "Search traditional knowledge, species, stories..."
-            value = { searchTerm }
-            onChange = {
-                (e) => setSearchTerm(e.target.value)
-            }
-            className = "w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent" /
-            >
-            <
-            button className = "absolute right-3 top-1/2 transform -translate-y-1/2" >
-            <
-            Filter className = "w-5 h-5 text-gray-400" / >
-            <
-            /button> < /
-            div > <
-            /div>
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search traditional knowledge, species, stories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Filter className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+        </div>
 
-            { /* Category Tabs */ } <
-            div className = "flex flex-wrap justify-center gap-4 mb-8" > {
-                knowledgeCategories.map((category) => ( <
-                        button key = { category.id }
-                        onClick = {
-                            () => setActiveTab(category.id)
-                        }
-                        className = { `flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          {knowledgeCategories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setActiveTab(category.id)}
+              className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
                 activeTab === category.id
                   ? `${getColorClasses(category.color)} border-2`
                   : 'bg-white text-gray-600 border-2 border-gray-200 hover:border-gray-300'
@@ -519,7 +472,6 @@ export default function KnowledgeCenter() {
           ))}
         </div>
 
-        {/* Content */}
         <div className="bg-gray-50 rounded-2xl p-8">
           {renderContent()}
         </div>
