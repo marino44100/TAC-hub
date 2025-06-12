@@ -11,10 +11,30 @@ export async function POST(request) {
         // OpenAI API configuration
         const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 
-        if (!OPENAI_API_KEY) {
-            console.error('OpenAI API key not configured')
+        console.log('API Key status:', OPENAI_API_KEY ? 'Present' : 'Missing')
+        console.log('Environment:', process.env.NODE_ENV)
+
+        if (!OPENAI_API_KEY || OPENAI_API_KEY === 'your_openai_api_key_here') {
+            console.error('OpenAI API key not configured properly')
             return NextResponse.json({
-                message: `I apologize, but I'm currently unable to connect to my AI services. However, I can still help you navigate the TAC-HUB platform:
+                message: `🔧 **AI Configuration Needed**
+
+I'm currently running in fallback mode because the OpenAI API key isn't configured.
+
+**To enable full ChatGPT-4 functionality:**
+
+**For Vercel Deployment:**
+1. Go to your Vercel dashboard
+2. Select your project → Settings → Environment Variables
+3. Add: OPENAI_API_KEY = your_actual_openai_api_key
+4. Redeploy your application
+
+**For Local Development:**
+1. Get API key from https://platform.openai.com/api-keys
+2. Update .env.local file with your real API key
+3. Restart your development server
+
+**Meanwhile, I can still help you navigate the TAC-HUB platform:
 
 🌍 **Climate Information**: 
 - Visit our Knowledge Center for climate data and research
@@ -161,6 +181,8 @@ Current context: ${context || 'General TAC-HUB assistance for Congo Basin commun
         if (!response.ok) {
             const errorData = await response.json()
             console.error('OpenAI API error:', errorData)
+            console.error('Response status:', response.status)
+            console.error('Response statusText:', response.statusText)
 
             // Fallback response with helpful information
             return NextResponse.json({
