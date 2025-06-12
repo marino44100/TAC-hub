@@ -42,6 +42,7 @@ export default function CommunityPage() {
     const [loading, setLoading] = useState(true)
     const [showCreateForm, setShowCreateForm] = useState(false)
     const [createFormType, setCreateFormType] = useState('')
+    const [userVotes, setUserVotes] = useState({})
 
     // Form states
     const [networkForm, setNetworkForm] = useState({
@@ -83,7 +84,19 @@ export default function CommunityPage() {
 
     useEffect(() => {
         loadData()
+        loadUserVotes()
     }, [])
+
+    const loadUserVotes = () => {
+        try {
+            const savedVotes = localStorage.getItem('userVotes')
+            if (savedVotes) {
+                setUserVotes(JSON.parse(savedVotes))
+            }
+        } catch (error) {
+            console.error('Failed to load user votes:', error)
+        }
+    }
 
     const loadData = () => {
         setLoading(true)
@@ -104,9 +117,62 @@ export default function CommunityPage() {
                 return
             }
 
-            await commService.vote(decisionId, voteType, user)
-            alert('✅ Your vote has been recorded!')
-            loadData()
+            // Check if user has already voted on this decision
+            const voteKey = `${user.email || user.id}_${decisionId}`
+            if (userVotes[voteKey]) {
+                alert('You have already voted on this decision. Each user can only vote once per decision.')
+                return
+            }
+
+            // Update the decision data
+            const updatedData = {...data }
+            const decisionIndex = updatedData.decisionMaking.findIndex(d => d.id === decisionId)
+
+            if (decisionIndex === -1) {
+                alert('Decision not found.')
+                return
+            }
+
+            const decision = updatedData.decisionMaking[decisionIndex]
+
+            // Update vote counts
+            if (voteType === 'inFavor') {
+                decision.votes.inFavor = (decision.votes.inFavor || 0) + 1
+            } else if (voteType === 'against') {
+                decision.votes.against = (decision.votes.against || 0) + 1
+            } else if (voteType === 'abstain') {
+                decision.votes.abstain = (decision.votes.abstain || 0) + 1
+            }
+
+            decision.votes.total = (decision.votes.total || 0) + 1
+
+            // Record the user's vote to prevent duplicate voting
+            setUserVotes(prev => ({
+                ...prev,
+                [voteKey]: {
+                    voteType,
+                    timestamp: new Date().toISOString(),
+                    userId: user.email || user.id,
+                    decisionId
+                }
+            }))
+
+            // Update the data state
+            setData(updatedData)
+
+            // Store in localStorage for persistence
+            localStorage.setItem('userVotes', JSON.stringify({
+                ...userVotes,
+                [voteKey]: {
+                    voteType,
+                    timestamp: new Date().toISOString(),
+                    userId: user.email || user.id,
+                    decisionId
+                }
+            }))
+
+            alert(`✅ Your vote "${voteType === 'inFavor' ? 'In Favor' : voteType === 'against' ? 'Against' : 'Abstain'}" has been recorded!`)
+
         } catch (error) {
             alert('Failed to vote: ' + error.message)
         }
@@ -713,33 +779,92 @@ export default function CommunityPage() {
                             } >
                             <
                             /div> < /
+                            div >
+
+                            <
+                            div className = "flex items-center justify-between" >
+                            <
+                            span className = "text-sm text-gray-600" > Abstain < /span> <
+                            span className = "text-sm font-medium text-gray-600" > { decision.votes ? .abstain || 0 } < /span> < /
+                            div > <
+                            div className = "w-full bg-gray-200 rounded-full h-2" >
+                            <
+                            div className = "bg-gray-500 h-2 rounded-full"
+                            style = {
+                                { width: `${((decision.votes?.abstain || 0) / (decision.eligibleVoters || 1)) * 100}%` }
+                            } >
+                            <
+                            /div> < /
                             div > <
                             /div>
 
                             {
-                                user && ( <
-                                    div className = "flex space-x-3" >
-                                    <
-                                    button onClick = {
-                                        () => handleVote(decision.id, 'inFavor')
-                                    }
-                                    className = "flex-1 bg-green-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-green-700 transition-colors" >
-                                    Vote In Favor <
-                                    /button> <
-                                    button onClick = {
-                                        () => handleVote(decision.id, 'against')
-                                    }
-                                    className = "flex-1 bg-red-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-red-700 transition-colors" >
-                                    Vote Against <
-                                    /button> <
-                                    button onClick = {
-                                        () => handleVote(decision.id, 'abstain')
-                                    }
-                                    className = "flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-gray-700 transition-colors" >
-                                    Abstain <
-                                    /button> < /
-                                    div >
-                                )
+                                user && (() => {
+                                    const voteKey = `${user.email || user.id}_${decision.id}`
+                                    const userVote = userVotes[voteKey]
+                                    const hasVoted = !!userVote
+
+                                    return ( <
+                                        div className = "space-y-3" > {
+                                            hasVoted && ( <
+                                                div className = "bg-blue-50 border border-blue-200 rounded-lg p-3" >
+                                                <
+                                                p className = "text-sm text-blue-800" > ✅You voted: < strong > {
+                                                    userVote.voteType === 'inFavor' ? 'In Favor' : userVote.voteType === 'against' ? 'Against' : 'Abstain'
+                                                } <
+                                                /strong> <
+                                                span className = "text-blue-600 ml-2" >
+                                                ({ new Date(userVote.timestamp).toLocaleDateString() }) <
+                                                /span> <
+                                                /p> <
+                                                /div>
+                                            )
+                                        }
+
+                                        <
+                                        div className = "flex space-x-3" >
+                                        <
+                                        button onClick = {
+                                            () => handleVote(decision.id, 'inFavor') }
+                                        disabled = { hasVoted }
+                                        className = { `flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                                                        hasVoted
+                                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-green-600 text-white hover:bg-green-700'
+                                                    } ${userVote?.voteType === 'inFavor' ? 'ring-2 ring-green-400' : ''}` } >
+                                        { userVote ? .voteType === 'inFavor' ? '✓ ' : '' }
+                                        Vote In Favor <
+                                        /button>
+
+                                        <
+                                        button onClick = {
+                                            () => handleVote(decision.id, 'against') }
+                                        disabled = { hasVoted }
+                                        className = { `flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                                                        hasVoted
+                                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-red-600 text-white hover:bg-red-700'
+                                                    } ${userVote?.voteType === 'against' ? 'ring-2 ring-red-400' : ''}` } >
+                                        { userVote ? .voteType === 'against' ? '✓ ' : '' }
+                                        Vote Against <
+                                        /button>
+
+                                        <
+                                        button onClick = {
+                                            () => handleVote(decision.id, 'abstain') }
+                                        disabled = { hasVoted }
+                                        className = { `flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                                                        hasVoted
+                                                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                                            : 'bg-gray-600 text-white hover:bg-gray-700'
+                                                    } ${userVote?.voteType === 'abstain' ? 'ring-2 ring-gray-400' : ''}` } >
+                                        { userVote ? .voteType === 'abstain' ? '✓ ' : '' }
+                                        Abstain <
+                                        /button> <
+                                        /div> <
+                                        /div>
+                                    )
+                                })()
                             } <
                             /div>
                         )
