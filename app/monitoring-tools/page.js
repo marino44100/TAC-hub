@@ -5,7 +5,8 @@ import Footer from '../../components/Footer'
 import ForestHealthAnalyzer from '../../components/ForestHealthAnalyzer'
 import WeatherTracker from '../../components/WeatherTracker'
 import WildlifeCounter from '../../components/WildlifeCounter'
-import { Camera, Calendar, TreePine, Calculator, Upload, CheckCircle, Save } from 'lucide-react'
+import AdminPanel from '../../components/AdminPanel'
+import { Camera, Calendar, TreePine, Calculator, Upload, CheckCircle, Save, Settings } from 'lucide-react'
 
 export default function MonitoringToolsPage() {
     const [activeTab, setActiveTab] = useState('forest-health')
@@ -18,6 +19,7 @@ export default function MonitoringToolsPage() {
     })
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitSuccess, setSubmitSuccess] = useState(false)
+    const [showAdminPanel, setShowAdminPanel] = useState(false)
 
     useEffect(() => {
         loadSubmissions()
@@ -419,7 +421,24 @@ return ( <
         <div className="bg-gray-50 rounded-2xl p-8">
           {renderContent()}
         </div>
+
+        {/* Admin Panel Button */}
+        <div className="fixed bottom-6 right-6">
+          <button
+            onClick={() => setShowAdminPanel(true)}
+            className="bg-gray-800 text-white p-3 rounded-full shadow-lg hover:bg-gray-900 transition-colors"
+            title="Admin Panel - Manage Traditional Knowledge"
+          >
+            <Settings className="w-6 h-6" />
+          </button>
+        </div>
       </div>
+
+      {/* Admin Panel */}
+      <AdminPanel
+        isOpen={showAdminPanel}
+        onClose={() => setShowAdminPanel(false)}
+      />
 
       <Footer />
     </main>
