@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import ClimateAdminPanel from '../../components/ClimateAdminPanel'
 import TraditionalKnowledgeAdmin from '../../components/TraditionalKnowledgeAdmin'
+import CommunityCommAdmin from '../../components/CommunityCommAdmin'
 
 export default function AdminPage() {
     const [activeTab, setActiveTab] = useState('overview')
@@ -30,6 +31,7 @@ export default function AdminPage() {
         { id: 'projects', name: 'Projects', icon: FileText },
         { id: 'climate', name: 'Climate Analytics', icon: Globe },
         { id: 'knowledge', name: 'Traditional Knowledge', icon: BookOpen },
+        { id: 'community', name: 'Community Communication', icon: MessageCircle },
         { id: 'settings', name: 'Settings', icon: Settings }
     ]
 
@@ -201,12 +203,27 @@ export default function AdminPage() {
                 return renderClimate()
             case 'knowledge':
                 return renderKnowledge()
+            case 'community':
+                return renderCommunity()
             case 'settings':
                 return renderSettings()
             default:
                 return renderOverview()
         }
     }
+
+    const renderCommunity = () => ( <
+        div className = "space-y-6" >
+        <
+        h2 className = "text-2xl font-bold text-gray-900 flex items-center" >
+        <
+        MessageCircle className = "w-6 h-6 mr-2 text-blue-600" / >
+        Community Communication Management <
+        /h2> <
+        CommunityCommAdmin / >
+        <
+        /div>
+    )
 
     const renderKnowledge = () => ( <
         div className = "space-y-6" >
