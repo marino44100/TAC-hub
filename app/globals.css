@@ -14,11 +14,11 @@
 
 @layer components {
   .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
   }
   
   .btn-secondary {
-    @apply bg-secondary-500 hover:bg-secondary-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    @apply bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
   }
   
   .section-padding {
@@ -35,5 +35,44 @@
   
   .card-hover {
     @apply transition-transform duration-300 hover:scale-105;
+  }
+  
+  /* Admin Panel Specific Styles */
+  .admin-container {
+    @apply w-full max-w-full overflow-hidden;
+  }
+  
+  .admin-table {
+    @apply min-w-full table-auto;
+  }
+  
+  .admin-table th,
+  .admin-table td {
+    @apply text-left align-top;
+  }
+  
+  .admin-responsive-hide {
+    @apply hidden sm:table-cell;
+  }
+  
+  .admin-text-truncate {
+    @apply truncate max-w-xs;
+  }
+  
+  /* Prevent horizontal overflow */
+  .admin-content {
+    @apply overflow-x-auto max-w-full;
+  }
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: 640px) {
+    .admin-table th,
+    .admin-table td {
+      @apply px-2 py-2 text-sm;
+    }
+    
+    .admin-container {
+      @apply px-2;
+    }
   }
 }
