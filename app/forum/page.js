@@ -39,9 +39,7 @@ export default function ForumPage() {
         // Use a global key that all users share
         const globalPosts = localStorage.getItem('tac-hub-global-forum-posts')
 
-        // For testing, let's always reset the forum with fresh data
-        // Remove this condition after testing
-        if (false && globalPosts) {
+        if (globalPosts) {
             const parsedPosts = JSON.parse(globalPosts)
             setPosts(parsedPosts)
         } else {
@@ -166,7 +164,7 @@ export default function ForumPage() {
         setShowNewPostForm(false)
 
         // Show success message
-        alert('🎉 Your post has been shared with the community!')
+        alert('🎉 Your post has been shared with the community! All users can now see it.')
     }
 
     const handleLike = (postId) => {
