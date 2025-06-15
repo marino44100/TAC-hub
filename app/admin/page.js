@@ -38,7 +38,14 @@ import {
     RefreshCw,
     CheckCircle,
     Clock,
-    XCircle
+    XCircle,
+    Layout,
+    Type,
+    Image,
+    Square,
+    Columns,
+    Edit3,
+    Monitor
 } from 'lucide-react'
 
 export default function AdminPage() {
@@ -71,6 +78,7 @@ export default function AdminPage() {
         { id: 'species', name: 'Species DB', icon: Globe },
         { id: 'weather', name: 'Weather Data', icon: Calendar },
         { id: 'media', name: 'Media Library', icon: Package },
+        { id: 'page-builder', name: 'Page Builder', icon: Layout },
         { id: 'reports', name: 'Reports', icon: Activity },
         { id: 'settings', name: 'Settings', icon: Settings }
     ]
@@ -1859,6 +1867,125 @@ export default function AdminPage() {
                     div > <
                     span className = "text-sm font-bold text-purple-600" > { speciesData.filter(s => s.createdAt && new Date(s.createdAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length } <
                     /span> < /
+                    div > <
+                    /div> < /
+                    div > <
+                    /div>
+                )
+
+            case 'page-builder':
+                return ( <
+                    div className = "space-y-6" >
+                    <
+                    div className = "flex justify-between items-center" >
+                    <
+                    h2 className = "text-2xl font-bold text-gray-900" > Visual Page Builder < /h2> <
+                    a href = "/admin/page-builder"
+                    className = "btn-primary flex items-center space-x-2" >
+                    <
+                    Layout className = "w-4 h-4" / >
+                    <
+                    span > Open Page Builder < /span> < /
+                    a > <
+                    /div>
+
+                    <
+                    div className = "bg-white rounded-lg shadow-sm border border-gray-200 p-6" >
+                    <
+                    div className = "text-center py-12" >
+                    <
+                    Layout className = "w-16 h-16 text-blue-600 mx-auto mb-4" / >
+                    <
+                    h3 className = "text-xl font-semibold text-gray-900 mb-2" > WordPress - Style Page Builder < /h3> <
+                    p className = "text-gray-600 mb-6 max-w-2xl mx-auto" >
+                    Create and customize your website pages with our intuitive drag - and - drop page builder.Add components, edit content, and see changes in real - time. <
+                    /p>
+
+                    <
+                    div className = "grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 max-w-4xl mx-auto" >
+                    <
+                    div className = "text-center" >
+                    <
+                    div className = "w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3" >
+                    <
+                    Type className = "w-6 h-6 text-blue-600" / >
+                    <
+                    /div> <
+                    h4 className = "font-medium text-gray-900 mb-2" > Rich Components < /h4> <
+                    p className = "text-sm text-gray-600" > Hero sections, text blocks, images, buttons, columns and more < /p> < /
+                    div > <
+                    div className = "text-center" >
+                    <
+                    div className = "w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3" >
+                    <
+                    Edit3 className = "w-6 h-6 text-green-600" / >
+                    <
+                    /div> <
+                    h4 className = "font-medium text-gray-900 mb-2" > Live Editing < /h4> <
+                    p className = "text-sm text-gray-600" > Edit content and see changes instantly with our property panel < /p> < /
+                    div > <
+                    div className = "text-center" >
+                    <
+                    div className = "w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3" >
+                    <
+                    Monitor className = "w-6 h-6 text-purple-600" / >
+                    <
+                    /div> <
+                    h4 className = "font-medium text-gray-900 mb-2" > Responsive Design < /h4> <
+                    p className = "text-sm text-gray-600" > Preview and optimize
+                    for desktop, tablet, and mobile devices < /p> < /
+                    div > <
+                    /div>
+
+                    <
+                    div className = "mt-8" >
+                    <
+                    a href = "/admin/page-builder"
+                    className = "btn-primary inline-flex items-center space-x-2" >
+                    <
+                    Layout className = "w-5 h-5" / >
+                    <
+                    span > Launch Page Builder < /span> < /
+                    a > <
+                    /div> < /
+                    div > <
+                    /div>
+
+                    <
+                    div className = "bg-white rounded-lg shadow-sm border border-gray-200 p-6" >
+                    <
+                    h3 className = "text-lg font-semibold text-gray-900 mb-4" > Available Components < /h3> <
+                    div className = "grid grid-cols-2 md:grid-cols-5 gap-4" >
+                    <
+                    div className = "flex items-center space-x-2 p-3 bg-gray-50 rounded-lg" >
+                    <
+                    Layout className = "w-5 h-5 text-gray-600" / >
+                    <
+                    span className = "text-sm font-medium" > Hero Section < /span> < /
+                    div > <
+                    div className = "flex items-center space-x-2 p-3 bg-gray-50 rounded-lg" >
+                    <
+                    Type className = "w-5 h-5 text-gray-600" / >
+                    <
+                    span className = "text-sm font-medium" > Text Block < /span> < /
+                    div > <
+                    div className = "flex items-center space-x-2 p-3 bg-gray-50 rounded-lg" >
+                    <
+                    Image className = "w-5 h-5 text-gray-600" / >
+                    <
+                    span className = "text-sm font-medium" > Image < /span> < /
+                    div > <
+                    div className = "flex items-center space-x-2 p-3 bg-gray-50 rounded-lg" >
+                    <
+                    Square className = "w-5 h-5 text-gray-600" / >
+                    <
+                    span className = "text-sm font-medium" > Button < /span> < /
+                    div > <
+                    div className = "flex items-center space-x-2 p-3 bg-gray-50 rounded-lg" >
+                    <
+                    Columns className = "w-5 h-5 text-gray-600" / >
+                    <
+                    span className = "text-sm font-medium" > Columns < /span> < /
                     div > <
                     /div> < /
                     div > <
