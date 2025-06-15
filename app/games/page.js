@@ -124,13 +124,22 @@ export default function GamesPage() {
     }, [user])
 
     const loadUserGameData = () => {
-        const savedCredits = localStorage.getItem(`game-credits-${user.email}`) || '0'
+        const savedCredits = localStorage.getItem(`game-credits-${user.email}`)
         const savedStats = localStorage.getItem(`game-stats-${user.email}`)
 
-        setUserCredits(parseInt(savedCredits))
+        // New users start with 0 credits
+        setUserCredits(savedCredits ? parseInt(savedCredits) : 0)
 
         if (savedStats) {
             setGameStats(JSON.parse(savedStats))
+        } else {
+            // Initialize new user stats
+            setGameStats({
+                gamesPlayed: 0,
+                correctAnswers: 0,
+                totalCredits: 0,
+                achievements: []
+            })
         }
     }
 
@@ -144,7 +153,9 @@ export default function GamesPage() {
     }
 
     const endGame = (creditsEarned, correct = 0, total = 0) => {
-        const newCredits = userCredits + creditsEarned
+        // Ensure credits earned is positive, but allow for penalties
+        const finalCreditsEarned = Math.max(1, creditsEarned) // Minimum 1 credit for playing
+        const newCredits = userCredits + finalCreditsEarned
         const newStats = {
             ...gameStats,
             gamesPlayed: gameStats.gamesPlayed + 1,
@@ -156,6 +167,9 @@ export default function GamesPage() {
         setGameStats(newStats)
         saveUserGameData(newCredits, newStats)
         setCurrentGame(null)
+
+        // Show credits earned notification
+        alert(`🎉 Game Complete! You earned ${finalCreditsEarned} credits!`)
 
         // Check for new achievements
         checkAchievements(newStats)
@@ -421,8 +435,8 @@ function CongoQuizGame({ onGameEnd }) {
 
     const questions = [{
             question: "What is the traditional method used by Congo Basin communities to preserve fish?",
-            options: ["Smoking", "Freezing", "Salting", "Drying in sun"],
-            correct: 0,
+            options: ["Freezing", "Salting", "Smoking", "Drying in sun"],
+            correct: 2,
             explanation: "Smoking is the traditional method used to preserve fish, extending its shelf life while adding flavor."
         },
         {
@@ -433,14 +447,14 @@ function CongoQuizGame({ onGameEnd }) {
         },
         {
             question: "What is the traditional farming technique that helps preserve soil fertility?",
-            options: ["Monoculture", "Slash and burn", "Crop rotation", "Intensive farming"],
-            correct: 2,
+            options: ["Monoculture", "Intensive farming", "Slash and burn", "Crop rotation"],
+            correct: 3,
             explanation: "Crop rotation helps maintain soil fertility by alternating different crops that replenish nutrients."
         },
         {
             question: "Which traditional practice helps predict weather patterns?",
-            options: ["Animal behavior observation", "Star gazing", "Plant growth patterns", "All of the above"],
-            correct: 3,
+            options: ["All of the above", "Star gazing", "Plant growth patterns", "Animal behavior observation"],
+            correct: 0,
             explanation: "Traditional communities use multiple natural indicators including animal behavior, celestial observations, and plant patterns to predict weather."
         },
         {
@@ -599,7 +613,11 @@ function CongoQuizGame({ onGameEnd }) {
     }
 
     const handleGameEnd = () => {
-        const creditsEarned = score * 2 // 2 credits per correct answer
+        const correctAnswers = score
+        const wrongAnswers = questions.length - score
+        const baseCredits = correctAnswers * 3 // 3 credits per correct answer
+        const penalty = wrongAnswers * 1 // -1 credit per wrong answer
+        const creditsEarned = Math.max(2, baseCredits - penalty) // Minimum 2 credits for playing
         onGameEnd(creditsEarned, score, questions.length)
     }
 
@@ -1185,20 +1203,20 @@ function TreePlantingGame({ onGameEnd }) {
 
     const questions = [{
             question: "What is the traditional spacing between trees when planting in the Congo Basin?",
-            options: ["1 meter apart", "3-5 meters apart", "10 meters apart", "No spacing needed"],
+            options: ["10 meters apart", "3-5 meters apart", "1 meter apart", "No spacing needed"],
             correct: 1,
             explanation: "Traditional spacing of 3-5 meters allows trees to grow properly without competing for resources."
         },
         {
             question: "Which season is best for planting trees in the Congo Basin?",
-            options: ["Dry season", "Beginning of rainy season", "Peak dry season", "Any time"],
+            options: ["Peak dry season", "Beginning of rainy season", "Dry season", "Any time"],
             correct: 1,
             explanation: "Planting at the beginning of rainy season ensures young trees get enough water to establish roots."
         },
         {
             question: "What traditional method helps protect young trees from animals?",
-            options: ["Electric fences", "Natural thorn barriers", "Chemical repellents", "Concrete walls"],
-            correct: 1,
+            options: ["Chemical repellents", "Electric fences", "Natural thorn barriers", "Concrete walls"],
+            correct: 2,
             explanation: "Traditional communities use natural thorn barriers from local plants to protect young trees."
         },
         {
@@ -1744,18 +1762,22 @@ function QuickPlantGame({ onGameEnd }) {
         } else if (timeLeft === 0) {
             setGameActive(false)
             setTimeout(() => {
-                onGameEnd(treesPlanted * 2) // 2 credits per tree
+                // Minimum 5 credits, bonus for performance
+                const baseCredits = Math.max(5, treesPlanted * 2)
+                const bonus = treesPlanted > 20 ? 10 : treesPlanted > 15 ? 5 : 0
+                onGameEnd(baseCredits + bonus)
             }, 2000)
         }
     }, [timeLeft, gameActive, treesPlanted, onGameEnd])
 
     const plantTree = () => {
-        if (gameActive) {
+        if (gameActive && !plantingAnimation) {
             setPlantingAnimation(true)
+                // Don't stop the timer - animation runs parallel to game timer
+            setTreesPlanted(prev => prev + 1)
             setTimeout(() => {
-                setTreesPlanted(treesPlanted + 1)
-                setPlantingAnimation(false)
-            }, 500)
+                    setPlantingAnimation(false)
+                }, 300) // Shorter animation so timer doesn't feel stuck
         }
     }
 
@@ -1817,6 +1839,7 @@ function FishCatchGame({ onGameEnd }) {
     const [timeLeft, setTimeLeft] = useState(45)
     const [gameActive, setGameActive] = useState(true)
     const [fishingAnimation, setFishingAnimation] = useState(false)
+    const [failedAttempts, setFailedAttempts] = useState(0)
 
     useEffect(() => {
         if (timeLeft > 0 && gameActive) {
@@ -1825,35 +1848,43 @@ function FishCatchGame({ onGameEnd }) {
         } else if (timeLeft === 0) {
             setGameActive(false)
             setTimeout(() => {
-                const bonus = riverHealth > 80 ? 10 : riverHealth > 60 ? 5 : 0
-                onGameEnd(fishCaught * 3 + bonus) // 3 credits per fish + health bonus
+                // Calculate credits: base + bonus - penalties
+                const baseCredits = Math.max(3, fishCaught * 3) // Minimum 3 credits
+                const healthBonus = riverHealth > 80 ? 10 : riverHealth > 60 ? 5 : 0
+                const failurePenalty = failedAttempts * 1 // -1 credit per failed attempt
+                const finalCredits = Math.max(1, baseCredits + healthBonus - failurePenalty)
+                onGameEnd(finalCredits)
             }, 2000)
         }
-    }, [timeLeft, gameActive, fishCaught, riverHealth, onGameEnd])
+    }, [timeLeft, gameActive, fishCaught, riverHealth, failedAttempts, onGameEnd])
 
     const catchFish = () => {
-        if (gameActive) {
+        if (gameActive && !fishingAnimation) {
             setFishingAnimation(true)
 
-            // Random success rate based on river health
-            const successRate = riverHealth / 100
+            // Dynamic success rate based on river health and skill
+            const baseSuccessRate = Math.max(0.3, riverHealth / 100) // At least 30% chance
+            const skillBonus = fishCaught * 0.05 // Get better with practice
+            const successRate = Math.min(0.9, baseSuccessRate + skillBonus) // Max 90% success
             const success = Math.random() < successRate
 
+            // Timer continues running during animation
             setTimeout(() => {
-                if (success) {
-                    setFishCaught(fishCaught + 1)
-                    setRiverHealth(Math.max(0, riverHealth - 5)) // Fishing reduces health slightly
-                } else {
-                    setRiverHealth(Math.max(0, riverHealth - 10)) // Failed attempts hurt more
-                }
-                setFishingAnimation(false)
-            }, 1000)
+                    if (success) {
+                        setFishCaught(prev => prev + 1)
+                        setRiverHealth(prev => Math.max(0, prev - 3)) // Sustainable fishing
+                    } else {
+                        setFailedAttempts(prev => prev + 1)
+                        setRiverHealth(prev => Math.max(0, prev - 8)) // Failed attempts hurt more
+                    }
+                    setFishingAnimation(false)
+                }, 600) // Shorter animation
         }
     }
 
     const restoreRiver = () => {
         if (gameActive && riverHealth < 100) {
-            setRiverHealth(Math.min(100, riverHealth + 15))
+            setRiverHealth(prev => Math.min(100, prev + 20))
         }
     }
 
@@ -1965,17 +1996,17 @@ function ForestProtectGame({ onGameEnd }) {
     useEffect(() => {
         if (gameActive && !currentThreat) {
             const threatTimer = setTimeout(() => {
-                const randomThreat = threats[Math.floor(Math.random() * threats.length)]
-                setCurrentThreat(randomThreat)
+                    const randomThreat = threats[Math.floor(Math.random() * threats.length)]
+                    setCurrentThreat(randomThreat)
 
-                // Auto-damage if not handled in time
-                setTimeout(() => {
-                    if (currentThreat && currentThreat.id === randomThreat.id) {
-                        setForestHealth(prev => Math.max(0, prev - randomThreat.damage))
-                        setCurrentThreat(null)
-                    }
-                }, 3000)
-            }, Math.random() * 2000 + 1000)
+                    // Auto-damage if not handled in time (shorter window for challenge)
+                    setTimeout(() => {
+                            if (currentThreat && currentThreat.id === randomThreat.id) {
+                                setForestHealth(prev => Math.max(0, prev - randomThreat.damage))
+                                setCurrentThreat(null)
+                            }
+                        }, 2500) // Reduced from 3000ms to 2500ms for more challenge
+                }, Math.random() * 1500 + 800) // Faster threat spawning
 
             return () => clearTimeout(threatTimer)
         }
@@ -2015,9 +2046,11 @@ function ForestProtectGame({ onGameEnd }) {
         <
         div className = "bg-emerald-500 h-3 rounded-full transition-all duration-500"
         style = {
-            { width: `${forestHealth}%` } } >
-        < /div> <
-        /div> <
+            { width: `${forestHealth}%` }
+        } >
+        <
+        /div> < /
+        div > <
         /div>
 
         <
@@ -2030,8 +2063,8 @@ function ForestProtectGame({ onGameEnd }) {
                 <
                 div className = "text-red-700 font-bold" > ⚠️{ currentThreat.name }
                 Detected! < /div> <
-                div className = "text-red-600 text-sm" > Act quickly to protect the forest! < /div> <
-                /div>
+                div className = "text-red-600 text-sm" > Act quickly to protect the forest! < /div> < /
+                div >
             )
         } <
         /div>
@@ -2046,12 +2079,9 @@ function ForestProtectGame({ onGameEnd }) {
                 : actionAnimation
                   ? 'bg-emerald-400 scale-105'
                   : 'bg-emerald-600 hover:bg-emerald-700 active:scale-95'
-            }` } >
-                {!currentThreat ?
-                    '🌲 Forest is Safe' :
-                        actionAnimation ?
-                        '🛡️ Protecting...' :
-                        '🛡️ Stop Threat!'
+            }` } > {!currentThreat ?
+                    '🌲 Forest is Safe' : actionAnimation ?
+                        '🛡️ Protecting...' : '🛡️ Stop Threat!'
                 } <
                 /button>
             ) : ( <
@@ -2063,11 +2093,11 @@ function ForestProtectGame({ onGameEnd }) {
                 p className = "text-gray-600 mb-4" > Forest Health: { forestHealth } % < /p> <
                 p className = "text-sm text-gray-500" >
                 Credits earned: { threatsBlocked * 4 + (forestHealth > 80 ? 15 : forestHealth > 60 ? 10 : 5) } <
-                /p> <
-                /div>
+                /p> < /
+                div >
             )
         } <
-        /div> <
-        /div>
+        /div> < /
+        div >
     )
 }

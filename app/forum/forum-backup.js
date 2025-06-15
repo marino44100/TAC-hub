@@ -38,10 +38,7 @@ export default function ForumPage() {
     const loadGlobalPosts = () => {
         // Use a global key that all users share
         const globalPosts = localStorage.getItem('tac-hub-global-forum-posts')
-
-        // For testing, let's always reset the forum with fresh data
-        // Remove this condition after testing
-        if (false && globalPosts) {
+        if (globalPosts) {
             const parsedPosts = JSON.parse(globalPosts)
             setPosts(parsedPosts)
         } else {
