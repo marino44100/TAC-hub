@@ -1,9 +1,70 @@
 import { NextResponse } from 'next/server'
-import { kv } from '@vercel/kv'
 
 // Vercel KV database keys
 const POSTS_KEY = 'tac-hub-forum-posts'
 const POSTS_COUNTER_KEY = 'tac-hub-forum-posts-counter'
+
+// Check if KV is available (has required environment variables)
+const isKVAvailable = () => {
+    return process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
+}
+
+// Import KV only if environment variables are available
+let kv = null
+if (isKVAvailable()) {
+    try {
+        const { kv: kvClient } = require('@vercel/kv')
+        kv = kvClient
+        console.log('✅ Vercel KV database connected')
+    } catch (error) {
+        console.log('⚠️ Vercel KV not available, using fallback storage')
+    }
+} else {
+    console.log('⚠️ KV environment variables not found, using fallback storage for development')
+}
+
+// Fallback in-memory storage for development
+let fallbackStorage = {
+    posts: [],
+    counter: 0,
+    initialized: false
+}
+
+// Helper functions for storage operations
+const getPosts = async () => {
+    if (kv) {
+        return await kv.get(POSTS_KEY) || []
+    } else {
+        if (!fallbackStorage.initialized) {
+            await initializeSampleData()
+        }
+        return fallbackStorage.posts
+    }
+}
+
+const setPosts = async (posts) => {
+    if (kv) {
+        await kv.set(POSTS_KEY, posts)
+    } else {
+        fallbackStorage.posts = posts
+    }
+}
+
+const getCounter = async () => {
+    if (kv) {
+        return await kv.get(POSTS_COUNTER_KEY) || 0
+    } else {
+        return fallbackStorage.counter
+    }
+}
+
+const setCounter = async (counter) => {
+    if (kv) {
+        await kv.set(POSTS_COUNTER_KEY, counter)
+    } else {
+        fallbackStorage.counter = counter
+    }
+}
 
 // Initialize sample data if database is empty
 const initializeSampleData = async () => {
@@ -51,22 +112,25 @@ const initializeSampleData = async () => {
         }
     ]
     
-    await kv.set(POSTS_KEY, samplePosts)
-    await kv.set(POSTS_COUNTER_KEY, 2)
+    // Initialize storage
+    await setPosts(samplePosts)
+    await setCounter(2)
+    fallbackStorage.initialized = true
+    
     return samplePosts
 }
 
 // GET - Fetch all posts
 export async function GET(request) {
     try {
-        console.log('GET /api/forum-kv - Fetching posts from Vercel KV')
+        console.log('GET /api/forum-kv - Fetching posts from storage')
         
         const { searchParams } = new URL(request.url)
         const category = searchParams.get('category')
         const search = searchParams.get('search')
         
-        // Get posts from Vercel KV
-        let posts = await kv.get(POSTS_KEY)
+        // Get posts from storage (KV or fallback)
+        let posts = await getPosts()
         
         // Initialize with sample data if no posts exist
         if (!posts || posts.length === 0) {
@@ -74,7 +138,7 @@ export async function GET(request) {
             posts = await initializeSampleData()
         }
         
-        console.log(`Found ${posts.length} posts in database`)
+        console.log(`Found ${posts.length} posts in storage`)
         
         // Filter by category if specified
         if (category && category !== 'all') {
@@ -94,17 +158,20 @@ export async function GET(request) {
         // Sort by creation date (newest first)
         posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         
+        const storageType = kv ? 'Vercel KV Database' : 'Development Storage'
+        
         return NextResponse.json({
             success: true,
             posts,
             total: posts.length,
             lastUpdated: new Date().toISOString(),
-            message: 'Posts fetched successfully from Vercel KV'
+            storageType,
+            message: `Posts fetched successfully from ${storageType}`
         })
     } catch (error) {
-        console.error('Error fetching posts from KV:', error)
+        console.error('Error fetching posts:', error)
         return NextResponse.json(
-            { success: false, error: 'Failed to fetch posts from database' },
+            { success: false, error: 'Failed to fetch posts from storage' },
             { status: 500 }
         )
     }
@@ -129,11 +196,11 @@ export async function POST(request) {
         }
         
         // Get current posts and counter
-        const currentPosts = await kv.get(POSTS_KEY) || []
-        const currentCounter = await kv.get(POSTS_COUNTER_KEY) || 0
+        const currentPosts = await getPosts() || []
+        const currentCounter = await getCounter() || 0
         const newId = currentCounter + 1
         
-        console.log(`Current database has ${currentPosts.length} posts, new ID will be ${newId}`)
+        console.log(`Current storage has ${currentPosts.length} posts, new ID will be ${newId}`)
         
         // Create new post
         const newPost = {
@@ -157,20 +224,22 @@ export async function POST(request) {
         // Add new post to the beginning of the array
         const updatedPosts = [newPost, ...currentPosts]
         
-        // Save to Vercel KV
-        await kv.set(POSTS_KEY, updatedPosts)
-        await kv.set(POSTS_COUNTER_KEY, newId)
+        // Save to storage
+        await setPosts(updatedPosts)
+        await setCounter(newId)
         
-        console.log(`Post saved successfully. Database now has ${updatedPosts.length} posts`)
+        const storageType = kv ? 'Vercel KV Database' : 'Development Storage'
+        console.log(`Post saved successfully to ${storageType}. Storage now has ${updatedPosts.length} posts`)
         
         return NextResponse.json({
             success: true,
             post: newPost,
-            message: 'Post created successfully and saved to database',
-            totalPosts: updatedPosts.length
+            message: `Post created successfully and saved to ${storageType}`,
+            totalPosts: updatedPosts.length,
+            storageType
         })
     } catch (error) {
-        console.error('Error creating post in KV:', error)
+        console.error('Error creating post:', error)
         return NextResponse.json(
             { success: false, error: `Failed to create post: ${error.message}` },
             { status: 500 }
@@ -194,7 +263,7 @@ export async function PUT(request) {
         }
         
         // Get current posts
-        const currentPosts = await kv.get(POSTS_KEY) || []
+        const currentPosts = await getPosts() || []
         const postIndex = currentPosts.findIndex(post => post.id === postId)
         
         if (postIndex === -1) {
@@ -235,7 +304,7 @@ export async function PUT(request) {
                     )
                 }
                 
-                const currentCounter = await kv.get(POSTS_COUNTER_KEY) || 0
+                const currentCounter = await getCounter() || 0
                 const newReplyId = currentCounter + 1000 // Use different range for replies
                 
                 const newReply = {
@@ -262,68 +331,22 @@ export async function PUT(request) {
         updatedPost.updatedAt = new Date().toISOString()
         currentPosts[postIndex] = updatedPost
         
-        // Save updated posts to Vercel KV
-        await kv.set(POSTS_KEY, currentPosts)
+        // Save updated posts to storage
+        await setPosts(currentPosts)
         
-        console.log(`Post ${action} successful for post ID ${postId}`)
+        const storageType = kv ? 'Vercel KV Database' : 'Development Storage'
+        console.log(`Post ${action} successful for post ID ${postId} in ${storageType}`)
         
         return NextResponse.json({
             success: true,
             post: updatedPost,
-            message: `Post ${action} successful`
+            message: `Post ${action} successful`,
+            storageType
         })
     } catch (error) {
-        console.error('Error updating post in KV:', error)
+        console.error('Error updating post:', error)
         return NextResponse.json(
             { success: false, error: 'Failed to update post' },
-            { status: 500 }
-        )
-    }
-}
-
-// DELETE - Delete post (admin only)
-export async function DELETE(request) {
-    try {
-        console.log('DELETE /api/forum-kv - Deleting post')
-        
-        const { searchParams } = new URL(request.url)
-        const postId = parseInt(searchParams.get('id'))
-        
-        if (!postId) {
-            return NextResponse.json(
-                { success: false, error: 'Post ID is required' },
-                { status: 400 }
-            )
-        }
-        
-        // Get current posts
-        const currentPosts = await kv.get(POSTS_KEY) || []
-        const postIndex = currentPosts.findIndex(post => post.id === postId)
-        
-        if (postIndex === -1) {
-            return NextResponse.json(
-                { success: false, error: 'Post not found' },
-                { status: 404 }
-            )
-        }
-        
-        // Remove post from array
-        currentPosts.splice(postIndex, 1)
-        
-        // Save updated posts to Vercel KV
-        await kv.set(POSTS_KEY, currentPosts)
-        
-        console.log(`Post ${postId} deleted successfully. Database now has ${currentPosts.length} posts`)
-        
-        return NextResponse.json({
-            success: true,
-            message: 'Post deleted successfully',
-            totalPosts: currentPosts.length
-        })
-    } catch (error) {
-        console.error('Error deleting post from KV:', error)
-        return NextResponse.json(
-            { success: false, error: 'Failed to delete post' },
             { status: 500 }
         )
     }
