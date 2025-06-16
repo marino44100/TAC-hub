@@ -29,99 +29,39 @@ export default function ForumPage() {
         { id: 'projects', name: 'Project Showcase', icon: Tag }
     ]
 
-    // Load posts using localStorage for persistence (works on Vercel)
+    // Load posts from Vercel KV database
     useEffect(() => {
         loadPosts()
-        const interval = setInterval(loadPosts, 10000) // Refresh every 10 seconds
+        const interval = setInterval(loadPosts, 5000) // Refresh every 5 seconds for real-time updates
         return () => clearInterval(interval)
     }, [selectedCategory, searchTerm])
 
-    const loadPosts = () => {
+    const loadPosts = async () => {
         try {
-            // Load from localStorage for persistence across sessions
-            const localPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
-            if (localPosts) {
-                const parsedPosts = JSON.parse(localPosts)
-                const filteredPosts = filterPosts(parsedPosts)
-                setPosts(filteredPosts)
+            console.log('Loading posts from Vercel KV database...')
+            
+            const params = new URLSearchParams()
+            if (selectedCategory !== 'all') {
+                params.append('category', selectedCategory)
+            }
+            if (searchTerm) {
+                params.append('search', searchTerm)
+            }
+            
+            const response = await fetch(`/api/forum-kv?${params}`)
+            const data = await response.json()
+            
+            if (data.success) {
+                console.log(`Loaded ${data.posts.length} posts from database`)
+                setPosts(data.posts)
             } else {
-                // Initialize with sample data if nothing exists
-                initializeSamplePosts()
+                console.error('Failed to load posts:', data.error)
+                setPosts([])
             }
         } catch (error) {
-            console.error('Error loading posts:', error)
-            initializeSamplePosts()
+            console.error('Error loading posts from database:', error)
+            setPosts([])
         }
-    }
-
-    const filterPosts = (allPosts) => {
-        let filtered = allPosts
-
-        // Filter by category
-        if (selectedCategory !== 'all') {
-            filtered = filtered.filter(post => post.category === selectedCategory)
-        }
-
-        // Filter by search term
-        if (searchTerm) {
-            const searchLower = searchTerm.toLowerCase()
-            filtered = filtered.filter(post => 
-                post.content.toLowerCase().includes(searchLower) ||
-                post.author.toLowerCase().includes(searchLower) ||
-                (post.tags && post.tags.some(tag => tag.toLowerCase().includes(searchLower)))
-            )
-        }
-
-        // Sort by creation date (newest first)
-        return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    }
-
-    const initializeSamplePosts = () => {
-        const samplePosts = [
-            {
-                id: 1,
-                content: 'Welcome to TAC-HUB Community! 🌍 This is a space for climate advocates, researchers, and practitioners from across Africa to connect, share knowledge, and collaborate on climate action. Feel free to introduce yourself and share your climate story!',
-                author: 'TAC-HUB Team',
-                authorRole: 'Platform Administrator',
-                authorAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-                category: 'general',
-                privacy: 'public',
-                createdAt: '2024-01-15T10:30:00Z',
-                likes: 45,
-                likedBy: [],
-                replies: [
-                    {
-                        id: 101,
-                        content: 'Excited to be part of this community! Looking forward to learning from everyone here.',
-                        author: 'Emmanuel Mbeki',
-                        authorRole: 'Community Member',
-                        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-                        createdAt: '2024-01-15T11:15:00Z',
-                        likes: 12,
-                        likedBy: []
-                    }
-                ],
-                tags: ['Welcome', 'Community']
-            },
-            {
-                id: 2,
-                content: 'Just completed a reforestation project in the Congo Basin! 🌳 We planted over 500 indigenous trees with local communities. The enthusiasm and traditional knowledge shared by community elders was incredible.',
-                author: 'Dr. Sarah Johnson',
-                authorRole: 'Forest Conservation Specialist',
-                authorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-                category: 'conservation',
-                privacy: 'public',
-                createdAt: '2024-01-14T14:20:00Z',
-                likes: 78,
-                likedBy: [],
-                replies: [],
-                tags: ['Reforestation', 'Congo Basin']
-            }
-        ]
-        
-        localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(samplePosts))
-        const filteredPosts = filterPosts(samplePosts)
-        setPosts(filteredPosts)
     }
 
     const handleCreatePost = async (e) => {
@@ -133,37 +73,37 @@ export default function ForumPage() {
 
         setLoading(true)
         try {
-            // Create new post
-            const newPostData = {
-                id: Date.now(),
-                content: newPost.content,
-                author: user.name,
-                authorRole: 'Community Member',
-                authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-                category: newPost.category,
-                privacy: newPost.privacy,
-                createdAt: new Date().toISOString(),
-                likes: 0,
-                likedBy: [],
-                replies: [],
-                tags: []
+            console.log('Creating new post...')
+            
+            const response = await fetch('/api/forum-kv', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    content: newPost.content,
+                    author: user.name,
+                    authorRole: 'Community Member',
+                    authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+                    category: newPost.category,
+                    privacy: newPost.privacy,
+                    tags: []
+                })
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                console.log('Post created successfully:', data.post)
+                setNewPost({ content: '', category: 'general', privacy: 'public' })
+                setShowNewPostForm(false)
+                alert('🎉 Your post has been shared with the community!')
+                // Reload posts to show the new post
+                loadPosts()
+            } else {
+                console.error('Failed to create post:', data.error)
+                alert('Failed to create post: ' + data.error)
             }
-
-            // Save to localStorage for persistence
-            const currentPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
-            const existingPosts = currentPosts ? JSON.parse(currentPosts) : []
-            const updatedPosts = [newPostData, ...existingPosts]
-            
-            localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(updatedPosts))
-            
-            // Update display
-            const filteredPosts = filterPosts(updatedPosts)
-            setPosts(filteredPosts)
-
-            setNewPost({ content: '', category: 'general', privacy: 'public' })
-            setShowNewPostForm(false)
-            alert('🎉 Your post has been shared with the community!')
-            
         } catch (error) {
             console.error('Error creating post:', error)
             alert('Failed to create post. Please try again.')
@@ -172,45 +112,44 @@ export default function ForumPage() {
         }
     }
 
-    const handleLike = (postId) => {
+    const handleLike = async (postId) => {
         if (!user) {
             alert('Please login to interact with posts')
             return
         }
         
         try {
-            const currentPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
-            const existingPosts = currentPosts ? JSON.parse(currentPosts) : []
+            console.log(`Liking post ${postId}...`)
             
-            const updatedPosts = existingPosts.map(post => {
-                if (post.id === postId) {
-                    const hasLiked = post.likedBy?.includes(user.email)
-                    if (hasLiked) {
-                        return {
-                            ...post,
-                            likes: Math.max(0, post.likes - 1),
-                            likedBy: post.likedBy.filter(email => email !== user.email)
-                        }
-                    } else {
-                        return {
-                            ...post,
-                            likes: post.likes + 1,
-                            likedBy: [...(post.likedBy || []), user.email]
-                        }
-                    }
-                }
-                return post
+            const response = await fetch('/api/forum-kv', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    postId,
+                    action: 'like',
+                    data: { userEmail: user.email }
+                })
             })
 
-            localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(updatedPosts))
-            const filteredPosts = filterPosts(updatedPosts)
-            setPosts(filteredPosts)
+            const data = await response.json()
+
+            if (data.success) {
+                console.log('Like action successful')
+                // Reload posts to show updated likes
+                loadPosts()
+            } else {
+                console.error('Failed to like post:', data.error)
+                alert('Failed to like post: ' + data.error)
+            }
         } catch (error) {
             console.error('Error liking post:', error)
+            alert('Failed to like post. Please try again.')
         }
     }
 
-    const handleReply = (postId) => {
+    const handleReply = async (postId) => {
         if (!user) {
             alert('Please login to reply')
             return
@@ -218,32 +157,41 @@ export default function ForumPage() {
         if (!newReply.trim()) return
 
         try {
-            const currentPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
-            const existingPosts = currentPosts ? JSON.parse(currentPosts) : []
+            console.log(`Adding reply to post ${postId}...`)
+            
+            const response = await fetch('/api/forum-kv', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    postId,
+                    action: 'reply',
+                    data: {
+                        reply: {
+                            content: newReply,
+                            author: user.name,
+                            authorRole: 'Community Member',
+                            authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
+                        }
+                    }
+                })
+            })
 
-            const reply = {
-                id: Date.now(),
-                content: newReply,
-                author: user.name,
-                authorRole: 'Community Member',
-                authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-                createdAt: new Date().toISOString(),
-                likes: 0,
-                likedBy: []
+            const data = await response.json()
+
+            if (data.success) {
+                console.log('Reply added successfully')
+                setNewReply('')
+                // Reload posts to show new reply
+                loadPosts()
+            } else {
+                console.error('Failed to add reply:', data.error)
+                alert('Failed to add reply: ' + data.error)
             }
-
-            const updatedPosts = existingPosts.map(post =>
-                post.id === postId 
-                    ? { ...post, replies: [...(post.replies || []), reply] }
-                    : post
-            )
-
-            localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(updatedPosts))
-            const filteredPosts = filterPosts(updatedPosts)
-            setPosts(filteredPosts)
-            setNewReply('')
         } catch (error) {
             console.error('Error adding reply:', error)
+            alert('Failed to add reply. Please try again.')
         }
     }
 
@@ -275,8 +223,8 @@ export default function ForumPage() {
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                         Connect, share, and collaborate with climate advocates across Africa
                     </p>
-                    <p className="text-sm text-green-600 mt-2">
-                        ✅ Posts are now persistent and visible to all users!
+                    <p className="text-sm text-green-600 mt-2 font-semibold">
+                        🗄️ Powered by Vercel KV Database - Posts persist permanently and are visible to all users!
                     </p>
                 </div>
 
