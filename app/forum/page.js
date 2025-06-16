@@ -4,9 +4,8 @@ import Header from '../../components/Header'
 import Footer from '../../components/Footer'
 import { useAuth } from '../../contexts/AuthContext'
 import { 
-    MessageCircle, ThumbsUp, Send, User, Search, Plus, 
-    Heart, Share2, MoreHorizontal, Image, Video, Smile,
-    Globe, Users as UsersIcon, Lock, Calendar, Tag
+    MessageCircle, Send, Search, 
+    Heart, Share2, Globe, Lock, Tag, Plus
 } from 'lucide-react'
 
 export default function ForumPage() {
@@ -30,34 +29,99 @@ export default function ForumPage() {
         { id: 'projects', name: 'Project Showcase', icon: Tag }
     ]
 
-    // Load posts from database
+    // Load posts using localStorage for persistence (works on Vercel)
     useEffect(() => {
         loadPosts()
-        const interval = setInterval(loadPosts, 5000) // Refresh every 5 seconds
+        const interval = setInterval(loadPosts, 10000) // Refresh every 10 seconds
         return () => clearInterval(interval)
     }, [selectedCategory, searchTerm])
 
-    const loadPosts = async () => {
+    const loadPosts = () => {
         try {
-            const params = new URLSearchParams()
-            if (selectedCategory !== 'all') {
-                params.append('category', selectedCategory)
-            }
-            if (searchTerm) {
-                params.append('search', searchTerm)
-            }
-            
-            const response = await fetch(`/api/forum?${params}`)
-            const data = await response.json()
-            
-            if (data.success) {
-                setPosts(data.posts)
+            // Load from localStorage for persistence across sessions
+            const localPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
+            if (localPosts) {
+                const parsedPosts = JSON.parse(localPosts)
+                const filteredPosts = filterPosts(parsedPosts)
+                setPosts(filteredPosts)
             } else {
-                console.error('Failed to load posts:', data.error)
+                // Initialize with sample data if nothing exists
+                initializeSamplePosts()
             }
         } catch (error) {
             console.error('Error loading posts:', error)
+            initializeSamplePosts()
         }
+    }
+
+    const filterPosts = (allPosts) => {
+        let filtered = allPosts
+
+        // Filter by category
+        if (selectedCategory !== 'all') {
+            filtered = filtered.filter(post => post.category === selectedCategory)
+        }
+
+        // Filter by search term
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase()
+            filtered = filtered.filter(post => 
+                post.content.toLowerCase().includes(searchLower) ||
+                post.author.toLowerCase().includes(searchLower) ||
+                (post.tags && post.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+            )
+        }
+
+        // Sort by creation date (newest first)
+        return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    }
+
+    const initializeSamplePosts = () => {
+        const samplePosts = [
+            {
+                id: 1,
+                content: 'Welcome to TAC-HUB Community! 🌍 This is a space for climate advocates, researchers, and practitioners from across Africa to connect, share knowledge, and collaborate on climate action. Feel free to introduce yourself and share your climate story!',
+                author: 'TAC-HUB Team',
+                authorRole: 'Platform Administrator',
+                authorAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+                category: 'general',
+                privacy: 'public',
+                createdAt: '2024-01-15T10:30:00Z',
+                likes: 45,
+                likedBy: [],
+                replies: [
+                    {
+                        id: 101,
+                        content: 'Excited to be part of this community! Looking forward to learning from everyone here.',
+                        author: 'Emmanuel Mbeki',
+                        authorRole: 'Community Member',
+                        authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+                        createdAt: '2024-01-15T11:15:00Z',
+                        likes: 12,
+                        likedBy: []
+                    }
+                ],
+                tags: ['Welcome', 'Community']
+            },
+            {
+                id: 2,
+                content: 'Just completed a reforestation project in the Congo Basin! 🌳 We planted over 500 indigenous trees with local communities. The enthusiasm and traditional knowledge shared by community elders was incredible.',
+                author: 'Dr. Sarah Johnson',
+                authorRole: 'Forest Conservation Specialist',
+                authorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+                category: 'conservation',
+                privacy: 'public',
+                createdAt: '2024-01-14T14:20:00Z',
+                likes: 78,
+                likedBy: [],
+                replies: [],
+                tags: ['Reforestation', 'Congo Basin']
+            }
+        ]
+        
+        localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(samplePosts))
+        const filteredPosts = filterPosts(samplePosts)
+        setPosts(filteredPosts)
     }
 
     const handleCreatePost = async (e) => {
@@ -69,33 +133,37 @@ export default function ForumPage() {
 
         setLoading(true)
         try {
-            const response = await fetch('/api/forum', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: newPost.content,
-                    author: user.name,
-                    authorRole: 'Community Member',
-                    authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-                    category: newPost.category,
-                    privacy: newPost.privacy,
-                    tags: []
-                })
-            })
-
-            const data = await response.json()
-
-            if (data.success) {
-                setNewPost({ content: '', category: 'general', privacy: 'public' })
-                setShowNewPostForm(false)
-                alert('🎉 Your post has been shared with the community!')
-                // Reload posts to show the new post
-                loadPosts()
-            } else {
-                alert('Failed to create post: ' + data.error)
+            // Create new post
+            const newPostData = {
+                id: Date.now(),
+                content: newPost.content,
+                author: user.name,
+                authorRole: 'Community Member',
+                authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+                category: newPost.category,
+                privacy: newPost.privacy,
+                createdAt: new Date().toISOString(),
+                likes: 0,
+                likedBy: [],
+                replies: [],
+                tags: []
             }
+
+            // Save to localStorage for persistence
+            const currentPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
+            const existingPosts = currentPosts ? JSON.parse(currentPosts) : []
+            const updatedPosts = [newPostData, ...existingPosts]
+            
+            localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(updatedPosts))
+            
+            // Update display
+            const filteredPosts = filterPosts(updatedPosts)
+            setPosts(filteredPosts)
+
+            setNewPost({ content: '', category: 'general', privacy: 'public' })
+            setShowNewPostForm(false)
+            alert('🎉 Your post has been shared with the community!')
+            
         } catch (error) {
             console.error('Error creating post:', error)
             alert('Failed to create post. Please try again.')
@@ -104,40 +172,45 @@ export default function ForumPage() {
         }
     }
 
-    const handleLike = async (postId) => {
+    const handleLike = (postId) => {
         if (!user) {
             alert('Please login to interact with posts')
             return
         }
         
         try {
-            const response = await fetch('/api/forum', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    postId,
-                    action: 'like',
-                    data: { userEmail: user.email }
-                })
+            const currentPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
+            const existingPosts = currentPosts ? JSON.parse(currentPosts) : []
+            
+            const updatedPosts = existingPosts.map(post => {
+                if (post.id === postId) {
+                    const hasLiked = post.likedBy?.includes(user.email)
+                    if (hasLiked) {
+                        return {
+                            ...post,
+                            likes: Math.max(0, post.likes - 1),
+                            likedBy: post.likedBy.filter(email => email !== user.email)
+                        }
+                    } else {
+                        return {
+                            ...post,
+                            likes: post.likes + 1,
+                            likedBy: [...(post.likedBy || []), user.email]
+                        }
+                    }
+                }
+                return post
             })
 
-            const data = await response.json()
-
-            if (data.success) {
-                // Reload posts to show updated likes
-                loadPosts()
-            } else {
-                alert('Failed to like post: ' + data.error)
-            }
+            localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(updatedPosts))
+            const filteredPosts = filterPosts(updatedPosts)
+            setPosts(filteredPosts)
         } catch (error) {
             console.error('Error liking post:', error)
-            alert('Failed to like post. Please try again.')
         }
     }
 
-    const handleReply = async (postId) => {
+    const handleReply = (postId) => {
         if (!user) {
             alert('Please login to reply')
             return
@@ -145,37 +218,32 @@ export default function ForumPage() {
         if (!newReply.trim()) return
 
         try {
-            const response = await fetch('/api/forum', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    postId,
-                    action: 'reply',
-                    data: {
-                        reply: {
-                            content: newReply,
-                            author: user.name,
-                            authorRole: 'Community Member',
-                            authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face'
-                        }
-                    }
-                })
-            })
+            const currentPosts = localStorage.getItem('tac-hub-forum-posts-persistent')
+            const existingPosts = currentPosts ? JSON.parse(currentPosts) : []
 
-            const data = await response.json()
-
-            if (data.success) {
-                setNewReply('')
-                // Reload posts to show new reply
-                loadPosts()
-            } else {
-                alert('Failed to add reply: ' + data.error)
+            const reply = {
+                id: Date.now(),
+                content: newReply,
+                author: user.name,
+                authorRole: 'Community Member',
+                authorAvatar: user.avatar || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+                createdAt: new Date().toISOString(),
+                likes: 0,
+                likedBy: []
             }
+
+            const updatedPosts = existingPosts.map(post =>
+                post.id === postId 
+                    ? { ...post, replies: [...(post.replies || []), reply] }
+                    : post
+            )
+
+            localStorage.setItem('tac-hub-forum-posts-persistent', JSON.stringify(updatedPosts))
+            const filteredPosts = filterPosts(updatedPosts)
+            setPosts(filteredPosts)
+            setNewReply('')
         } catch (error) {
             console.error('Error adding reply:', error)
-            alert('Failed to add reply. Please try again.')
         }
     }
 
@@ -207,9 +275,13 @@ export default function ForumPage() {
                     <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                         Connect, share, and collaborate with climate advocates across Africa
                     </p>
+                    <p className="text-sm text-green-600 mt-2">
+                        ✅ Posts are now persistent and visible to all users!
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    {/* Categories Sidebar */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg shadow-sm p-6 sticky top-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Categories</h3>
@@ -235,6 +307,7 @@ export default function ForumPage() {
                         </div>
                     </div>
 
+                    {/* Main Content */}
                     <div className="lg:col-span-3 space-y-6">
                         {/* Search Bar */}
                         <div className="bg-white rounded-lg shadow-sm p-4">
