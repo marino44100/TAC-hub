@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import { Mail, ShoppingCart } from 'lucide-react'
 
@@ -9,7 +9,6 @@ export default function Footer() {
   const handleSubscribe = async (e) => {
     e.preventDefault()
     setIsSubscribing(true)
-    // Simulate subscription process
     setTimeout(() => {
       setIsSubscribing(false)
       setEmail('')
@@ -18,20 +17,19 @@ export default function Footer() {
   }
 
   const footerLinks = [
-    { name: 'Home', href: '#' },
-    { name: 'Get Resources', href: '#resources' },
-    { name: 'About', href: '#about' },
-    { name: 'Contact', href: '#contact' },
-    { name: 'Submit Project', href: '#submit' },
-    { name: 'Discussion Forum', href: '#forum' },
-    { name: 'Shop', href: '#shop' },
+    { name: 'Home', href: '/' },
+    { name: 'Knowledge Center', href: '/knowledge-center' },
+    { name: 'About', href: '/about' },
+    { name: 'Contact', href: '/contact' },
+    { name: 'Submit Project', href: '/submit-project' },
+    { name: 'Discussion Forum', href: '/forum' },
+    { name: 'Shop', href: '/shop' },
   ]
 
   return (
     <footer className="bg-gray-900 text-white section-padding">
       <div className="container-max">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Newsletter Subscription */}
           <div className="lg:col-span-2">
             <h3 className="text-2xl font-bold mb-6">Subscribe to our newsletter</h3>
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-4 max-w-md">
@@ -57,7 +55,6 @@ export default function Footer() {
             </form>
           </div>
 
-          {/* Shopping Cart */}
           <div className="text-center lg:text-right">
             <h3 className="text-xl font-semibold mb-4">Shopping Cart</h3>
             <button className="flex items-center space-x-2 text-gray-300 hover:text-white mx-auto lg:mx-0 lg:ml-auto">
@@ -67,7 +64,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Footer Links */}
         <div className="border-t border-gray-800 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <nav className="flex flex-wrap justify-center md:justify-start gap-6">
@@ -83,7 +79,7 @@ export default function Footer() {
             </nav>
             
             <p className="text-gray-400 text-sm">
-              © 2025 The African Climate Hub. Powered by The African Climate Hub.
+              © 2025 The African Climate Hub. Powered by Elysian Media.
             </p>
           </div>
         </div>

@@ -1,78 +1,66 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-  
-  body {
-    @apply bg-white text-gray-900;
-  }
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        @apply bg-white text-gray-900;
+    }
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
-  }
-  
-  .section-padding {
-    @apply py-16 px-4 sm:px-6 lg:px-8;
-  }
-  
-  .container-max {
-    @apply max-w-7xl mx-auto;
-  }
-  
-  .card {
-    @apply bg-white rounded-lg shadow-lg overflow-hidden;
-  }
-  
-  .card-hover {
-    @apply transition-transform duration-300 hover:scale-105;
-  }
-  
-  /* Admin Panel Specific Styles */
-  .admin-container {
-    @apply w-full max-w-full overflow-hidden;
-  }
-  
-  .admin-table {
-    @apply min-w-full table-auto;
-  }
-  
-  .admin-table th,
-  .admin-table td {
-    @apply text-left align-top;
-  }
-  
-  .admin-responsive-hide {
-    @apply hidden sm:table-cell;
-  }
-  
-  .admin-text-truncate {
-    @apply truncate max-w-xs;
-  }
-  
-  /* Prevent horizontal overflow */
-  .admin-content {
-    @apply overflow-x-auto max-w-full;
-  }
-  
-  /* Mobile responsive adjustments */
-  @media (max-width: 640px) {
+    .btn-primary {
+        @apply bg-primary-600 hover: bg-primary-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    }
+    .btn-secondary {
+        @apply bg-white text-primary-600 border-2 border-primary-600 hover: bg-primary-600 hover: text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    }
+    .btn-outline-white {
+        @apply bg-transparent text-white border-2 border-white hover: bg-white hover: text-primary-600 font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+    }
+    .section-padding {
+        @apply py-16 px-4 sm: px-6 lg: px-8;
+    }
+    .container-max {
+        @apply max-w-7xl mx-auto;
+    }
+    .card {
+        @apply bg-white rounded-lg shadow-lg overflow-hidden;
+    }
+    .card-hover {
+        @apply transition-transform duration-300 hover: scale-105;
+    }
+    /* Admin Panel Specific Styles */
+    .admin-container {
+        @apply w-full max-w-full overflow-hidden;
+    }
+    .admin-table {
+        @apply min-w-full table-auto;
+    }
     .admin-table th,
     .admin-table td {
-      @apply px-2 py-2 text-sm;
+        @apply text-left align-top;
     }
-    
-    .admin-container {
-      @apply px-2;
+    .admin-responsive-hide {
+        @apply hidden sm: table-cell;
     }
-  }
+    .admin-text-truncate {
+        @apply truncate max-w-xs;
+    }
+    /* Prevent horizontal overflow */
+    .admin-content {
+        @apply overflow-x-auto max-w-full;
+    }
+    /* Mobile responsive adjustments */
+    @media (max-width: 640px) {
+        .admin-table th,
+        .admin-table td {
+            @apply px-2 py-2 text-sm;
+        }
+        .admin-container {
+            @apply px-2;
+        }
+    }
 }
