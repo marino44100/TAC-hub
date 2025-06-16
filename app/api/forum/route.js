@@ -1,61 +1,75 @@
 import { NextResponse } from 'next/server'
 
-// In-memory storage for Vercel compatibility
-// This will reset on each deployment but works for demo purposes
-let forumDatabase = {
-    posts: [{
-            id: 1,
-            content: 'Welcome to TAC-HUB Community! 🌍 This is a space for climate advocates, researchers, and practitioners from across Africa to connect, share knowledge, and collaborate on climate action. Feel free to introduce yourself and share your climate story!',
-            author: 'TAC-HUB Team',
-            authorRole: 'Platform Administrator',
-            authorAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
-            category: 'general',
-            privacy: 'public',
-            createdAt: '2024-01-15T10:30:00Z',
-            updatedAt: '2024-01-15T10:30:00Z',
-            likes: 45,
-            likedBy: [],
-            replies: [{
-                id: 101,
-                content: 'Excited to be part of this community! Looking forward to learning from everyone here.',
-                author: 'Emmanuel Mbeki',
-                authorRole: 'Community Member',
-                authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
-                createdAt: '2024-01-15T11:15:00Z',
-                likes: 12,
-                likedBy: []
-            }],
-            tags: ['Welcome', 'Community', 'Climate Action']
-        },
-        {
-            id: 2,
-            content: 'Just completed a reforestation project in the Congo Basin! 🌳 We planted over 500 indigenous trees with local communities. The enthusiasm and traditional knowledge shared by community elders was incredible. Here are some key insights we learned about sustainable forest management...',
-            author: 'Dr. Sarah Johnson',
-            authorRole: 'Forest Conservation Specialist',
-            authorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
-            category: 'conservation',
-            privacy: 'public',
-            createdAt: '2024-01-14T14:20:00Z',
-            updatedAt: '2024-01-14T14:20:00Z',
-            likes: 78,
-            likedBy: [],
-            replies: [],
-            tags: ['Reforestation', 'Congo Basin', 'Community', 'Traditional Knowledge']
-        }
-    ],
-    lastUpdated: new Date().toISOString()
+// Initialize global database for Vercel compatibility
+// This persists across function calls but resets on cold starts
+if (!global.forumDatabase) {
+    global.forumDatabase = {
+        posts: [{
+                id: 1,
+                content: 'Welcome to TAC-HUB Community! 🌍 This is a space for climate advocates, researchers, and practitioners from across Africa to connect, share knowledge, and collaborate on climate action. Feel free to introduce yourself and share your climate story!',
+                author: 'TAC-HUB Team',
+                authorRole: 'Platform Administrator',
+                authorAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face',
+                category: 'general',
+                privacy: 'public',
+                createdAt: '2024-01-15T10:30:00Z',
+                updatedAt: '2024-01-15T10:30:00Z',
+                likes: 45,
+                likedBy: [],
+                replies: [{
+                    id: 101,
+                    content: 'Excited to be part of this community! Looking forward to learning from everyone here.',
+                    author: 'Emmanuel Mbeki',
+                    authorRole: 'Community Member',
+                    authorAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face',
+                    createdAt: '2024-01-15T11:15:00Z',
+                    likes: 12,
+                    likedBy: []
+                }],
+                tags: ['Welcome', 'Community', 'Climate Action']
+            },
+            {
+                id: 2,
+                content: 'Just completed a reforestation project in the Congo Basin! 🌳 We planted over 500 indigenous trees with local communities. The enthusiasm and traditional knowledge shared by community elders was incredible. Here are some key insights we learned about sustainable forest management...',
+                author: 'Dr. Sarah Johnson',
+                authorRole: 'Forest Conservation Specialist',
+                authorAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face',
+                category: 'conservation',
+                privacy: 'public',
+                createdAt: '2024-01-14T14:20:00Z',
+                updatedAt: '2024-01-14T14:20:00Z',
+                likes: 78,
+                likedBy: [],
+                replies: [],
+                tags: ['Reforestation', 'Congo Basin', 'Community', 'Traditional Knowledge']
+            }
+        ],
+        lastUpdated: new Date().toISOString()
+    }
 }
 
 // Helper function to read database
 function readDatabase() {
-    return forumDatabase
+    // Ensure global database exists
+    if (!global.forumDatabase) {
+        global.forumDatabase = {
+            posts: [],
+            lastUpdated: new Date().toISOString()
+        }
+    }
+    return global.forumDatabase
 }
 
 // Helper function to write database
 function writeDatabase(data) {
-    forumDatabase = data
-    forumDatabase.lastUpdated = new Date().toISOString()
-    return true
+    try {
+        global.forumDatabase = data
+        global.forumDatabase.lastUpdated = new Date().toISOString()
+        return true
+    } catch (error) {
+        console.error('Error writing to global database:', error)
+        return false
+    }
 }
 
 // GET - Fetch all posts
