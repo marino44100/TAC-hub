@@ -1,4 +1,4 @@
-import Header from '../components/Header'
+﻿import Header from '../components/Header'
 import Hero from '../components/Hero'
 import Dashboard from '../components/Dashboard'
 import HowItWorks from '../components/HowItWorks'
@@ -12,33 +12,20 @@ import Footer from '../components/Footer'
 import ShoppingCart from '../components/ShoppingCart'
 
 export default function Home() {
-    return ( <
-        main className = "min-h-screen" >
-        <
-        Header / >
-        <
-        ShoppingCart / >
-        <
-        Hero / >
-        <
-        Dashboard / >
-        <
-        HowItWorks / >
-        <
-        ResourcesLibrary / >
-        <
-        ProjectShowcase / >
-        <
-        ClimateInfo / >
-        <
-        CallToAction / >
-        <
-        WhyJoinUs / >
-        <
-        ClimateServices / >
-        <
-        Footer / >
-        <
-        /main>
+    return (
+        <main className="min-h-screen">
+            <Header />
+            <ShoppingCart />
+            <Hero />
+            <Dashboard />
+            <HowItWorks />
+            <ResourcesLibrary />
+            <ProjectShowcase />
+            <ClimateInfo />
+            <CallToAction />
+            <WhyJoinUs />
+            <ClimateServices />
+            <Footer />
+        </main>
     )
 }

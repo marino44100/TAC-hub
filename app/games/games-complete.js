@@ -476,8 +476,7 @@ function CongoQuizGame({ onGameEnd }) {
         <
         div className = "container-max py-8" >
         <
-        div className = "max-w-2xl mx-auto" >
-        <
+        div className = "max-w-2xl mx-auto" > { /* Progress Bar */ } <
         div className = "mb-6" >
         <
         div className = "flex justify-between items-center mb-2" >
@@ -505,7 +504,7 @@ function CongoQuizGame({ onGameEnd }) {
         div > <
         /div>
 
-        <
+        { /* Question Card */ } <
         div className = "bg-white rounded-lg p-6 shadow-sm border border-gray-200 mb-6" >
         <
         h2 className = "text-xl font-semibold text-gray-900 mb-6" > { questions[currentQuestion].question } <
