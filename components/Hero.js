@@ -4,8 +4,11 @@ import JoinCommunityButton from './JoinCommunityButton'
 
 export default function Hero() {
     return ( <
-        section className = "relative bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white overflow-hidden" >
-        <
+        section className = "relative bg-gradient-to-br from-primary-900 via-primary-800 to-primary-700 text-white overflow-hidden" > { /* Background Image */ } <
+        div className = "absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30"
+        style = {
+            { backgroundImage: "url('/pictures/IMG-20250623-WA0029.jpg')" } } >
+        < /div> <
         div className = "absolute inset-0 bg-black opacity-20" > < /div> <
         div className = "relative container-max py-20 lg:py-32" >
         <
@@ -21,22 +24,23 @@ export default function Hero() {
         /div> <
         h1 className = "text-4xl lg:text-6xl font-bold leading-tight" >
         The African Climate Hub <
-        span className = "block text-secondary-400" > TAC - HUB < /span> < /
-        h1 > <
+        span className = "block text-secondary-400" > TAC - HUB < /span> <
+        /h1> <
         p className = "text-xl lg:text-2xl text-gray-200 leading-relaxed" >
         A mobile and web platform that helps Congo Basin communities use their traditional knowledge alongside modern technology to fight climate change
         while keeping communities in control. <
         /p> <
         div className = "flex flex-col sm:flex-row gap-4" >
         <
-        JoinCommunityButton / > <
+        JoinCommunityButton / >
+        <
         Link href = "/knowledge-center"
         className = "border-2 border-white text-white hover:bg-white hover:text-primary-900 px-8 py-4 rounded-lg font-semibold text-lg transition-colors inline-flex items-center justify-center" >
         Explore Knowledge <
         BookOpen className = "ml-2 w-5 h-5" / >
         <
-        /Link> < /
-        div > <
+        /Link> <
+        /div> <
         /div> <
         div className = "relative" >
         <
@@ -48,28 +52,28 @@ export default function Hero() {
         div className = "flex justify-between items-center" >
         <
         span className = "text-gray-200" > Communities Connected < /span> <
-        span className = "text-2xl font-bold text-secondary-400" > 247 < /span> < /
-        div > <
+        span className = "text-2xl font-bold text-secondary-400" > 247 < /span> <
+        /div> <
         div className = "flex justify-between items-center" >
         <
         span className = "text-gray-200" > Traditional Knowledge Entries < /span> <
-        span className = "text-2xl font-bold text-secondary-400" > 1, 847 < /span> < /
-        div > <
+        span className = "text-2xl font-bold text-secondary-400" > 1, 847 < /span> <
+        /div> <
         div className = "flex justify-between items-center" >
         <
         span className = "text-gray-200" > Forest Area Monitored < /span> <
-        span className = "text-2xl font-bold text-secondary-400" > 1.2 M ha < /span> < /
-        div > <
+        span className = "text-2xl font-bold text-secondary-400" > 1.2 M ha < /span> <
+        /div> <
         div className = "flex justify-between items-center" >
         <
         span className = "text-gray-200" > Elder Teachings Recorded < /span> <
-        span className = "text-2xl font-bold text-secondary-400" > 342 < /span> < /
-        div > <
-        /div> < /
-        div > <
-        /div> < /
-        div > <
-        /div> < /
-        section >
+        span className = "text-2xl font-bold text-secondary-400" > 342 < /span> <
+        /div> <
+        /div> <
+        /div> <
+        /div> <
+        /div> <
+        /div> <
+        /section>
     )
 }

@@ -8,21 +8,21 @@ export default function ResourcesLibrary() {
             id: 1,
             title: "ALL WE CAN SAVE",
             description: "All We Can Save illuminates the expertise and insights of dozens of diverse women leading on climate in the United States–scientists, journalists, farmers, lawyers, teachers, activists, innovators, wonks, and designers, across generations, geographies, and race–and aims to advance a more representative, nuanced, and solution-oriented public conversation on the climate crisis",
-            image: "/api/placeholder/300/400",
+            image: "/pictures/IMG-20250623-WA0024.jpg",
             price: 49
         },
         {
             id: 2,
             title: "THE GREEN BOOK",
             description: "The book explores symbols of transformation, myths and futures; and is structured to encourage regular reflection. Each contributor brings their own perspective – green politics, change and loss, climate change denial, consumerism and our connection to nature.",
-            image: "/api/placeholder/300/400",
+            image: "/pictures/IMG-20250623-WA0028.jpg",
             price: 64
         },
         {
             id: 3,
             title: "CLIMATE CHANGE SIMPLIFIED",
             description: "Only when the last tree has been cut down, the last fish been caught, and the last stream poisoned, will we realize we cannot eat money. This simple yet sobering truth holds a mirror to our society's unsustainable trajectory.",
-            image: "/api/placeholder/300/400",
+            image: "/pictures/IMG-20250623-WA0029.jpg",
             price: 85
         }
     ]
@@ -49,22 +49,24 @@ export default function ResourcesLibrary() {
                 div key = { index }
                 className = "card card-hover" >
                 <
-                div className = "h-64 bg-gray-200 flex items-center justify-center" >
+                div className = "h-64 overflow-hidden" >
                 <
-                span className = "text-gray-500" > Book Cover < /span> <
+                img src = { book.image }
+                alt = { book.title }
+                className = "w-full h-full object-cover hover:scale-105 transition-transform duration-300" /
+                >
+                <
                 /div> <
                 div className = "p-6" >
                 <
                 h3 className = "text-xl font-bold text-gray-900 mb-3" >
                 BOOK TITLE: { book.title } <
                 /h3> <
-                p className = "text-gray-600 mb-4 line-clamp-4" > { book.description } <
-                /p> <
+                p className = "text-gray-600 mb-4 line-clamp-4" > { book.description } < /p> <
                 div className = "flex justify-between items-center" >
                 <
                 span className = "text-lg font-semibold text-primary-600" > { book.price }
-                CFA <
-                /span> <
+                CFA < /span> <
                 button onClick = {
                     () => addItem(book) }
                 className = "btn-primary text-sm" >
